@@ -2,8 +2,14 @@ import { useEffect, useState, type FormEvent } from "react";
 import type { ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
-import type { VehicleStatus, VehicleType } from "../api/types";
-import { VEHICLE_TYPE_LABELS, VEHICLE_TYPES, inputClass } from "../constants";
+import type { PaymentMethod, VehicleStatus, VehicleType } from "../api/types";
+import {
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+  VEHICLE_TYPE_LABELS,
+  VEHICLE_TYPES,
+  inputClass,
+} from "../constants";
 
 const emptyForm = {
   type: "coche" as VehicleType,
@@ -16,6 +22,15 @@ const emptyForm = {
   purchasePrice: "",
   notes: "",
   status: "activo" as VehicleStatus,
+  dealerName: "",
+  dealerAddress: "",
+  dealerAgent: "",
+  paymentMethod: "contado" as PaymentMethod,
+  financingLender: "",
+  financingAmount: "",
+  financingInterestRate: "",
+  financingTermMonths: "",
+  financingNotes: "",
 };
 
 export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
@@ -41,6 +56,15 @@ export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
             purchasePrice: v.purchasePrice?.toString() ?? "",
             notes: v.notes ?? "",
             status: v.status,
+            dealerName: v.dealerName ?? "",
+            dealerAddress: v.dealerAddress ?? "",
+            dealerAgent: v.dealerAgent ?? "",
+            paymentMethod: v.paymentMethod,
+            financingLender: v.financingLender ?? "",
+            financingAmount: v.financingAmount?.toString() ?? "",
+            financingInterestRate: v.financingInterestRate?.toString() ?? "",
+            financingTermMonths: v.financingTermMonths?.toString() ?? "",
+            financingNotes: v.financingNotes ?? "",
           });
           setLoading(false);
         })
@@ -54,6 +78,7 @@ export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
+    const financed = form.paymentMethod === "financiado";
     const payload = {
       type: form.type,
       alias: form.alias,
@@ -65,6 +90,17 @@ export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
       purchasePrice: form.purchasePrice ? Number(form.purchasePrice) : undefined,
       notes: form.notes || undefined,
       status: form.status,
+      dealerName: form.dealerName || undefined,
+      dealerAddress: form.dealerAddress || undefined,
+      dealerAgent: form.dealerAgent || undefined,
+      paymentMethod: form.paymentMethod,
+      financingLender: financed ? form.financingLender || undefined : undefined,
+      financingAmount: financed && form.financingAmount ? Number(form.financingAmount) : undefined,
+      financingInterestRate:
+        financed && form.financingInterestRate ? Number(form.financingInterestRate) : undefined,
+      financingTermMonths:
+        financed && form.financingTermMonths ? Number(form.financingTermMonths) : undefined,
+      financingNotes: financed ? form.financingNotes || undefined : undefined,
     };
     try {
       if (mode === "create") {
@@ -166,6 +202,102 @@ export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
           />
         </Field>
       </div>
+
+      <fieldset className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+        <legend className="px-1 text-sm font-semibold">Concesionario</legend>
+        <Field label="Nombre del concesionario">
+          <input
+            className={inputClass}
+            value={form.dealerName}
+            onChange={(e) => setForm({ ...form, dealerName: e.target.value })}
+          />
+        </Field>
+        <Field label="Dirección">
+          <input
+            className={inputClass}
+            value={form.dealerAddress}
+            onChange={(e) => setForm({ ...form, dealerAddress: e.target.value })}
+          />
+        </Field>
+        <Field label="Agente / comercial">
+          <input
+            className={inputClass}
+            value={form.dealerAgent}
+            onChange={(e) => setForm({ ...form, dealerAgent: e.target.value })}
+          />
+        </Field>
+      </fieldset>
+
+      <fieldset className="space-y-4 rounded-lg border border-slate-200 p-4 dark:border-slate-800">
+        <legend className="px-1 text-sm font-semibold">Forma de pago</legend>
+        <Field label="Forma de pago">
+          <select
+            className={inputClass}
+            value={form.paymentMethod}
+            onChange={(e) => setForm({ ...form, paymentMethod: e.target.value as PaymentMethod })}
+          >
+            {PAYMENT_METHODS.map((m) => (
+              <option key={m} value={m}>
+                {PAYMENT_METHOD_LABELS[m]}
+              </option>
+            ))}
+          </select>
+        </Field>
+
+        {form.paymentMethod === "financiado" && (
+          <>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Entidad financiera">
+                <input
+                  className={inputClass}
+                  value={form.financingLender}
+                  onChange={(e) => setForm({ ...form, financingLender: e.target.value })}
+                />
+              </Field>
+              <Field label="Importe financiado (€)">
+                <input
+                  className={inputClass}
+                  type="number"
+                  step="0.01"
+                  value={form.financingAmount}
+                  onChange={(e) => setForm({ ...form, financingAmount: e.target.value })}
+                />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Interés (%)">
+                <input
+                  className={inputClass}
+                  type="number"
+                  step="0.01"
+                  value={form.financingInterestRate}
+                  onChange={(e) => setForm({ ...form, financingInterestRate: e.target.value })}
+                />
+              </Field>
+              <Field label="Plazo (meses)">
+                <input
+                  className={inputClass}
+                  type="number"
+                  value={form.financingTermMonths}
+                  onChange={(e) => setForm({ ...form, financingTermMonths: e.target.value })}
+                />
+              </Field>
+            </div>
+            <Field label="Notas de la financiación">
+              <textarea
+                className={inputClass}
+                rows={2}
+                value={form.financingNotes}
+                onChange={(e) => setForm({ ...form, financingNotes: e.target.value })}
+              />
+            </Field>
+            <p className="text-xs text-slate-500">
+              Los pagos de cada cuota (base e intereses) se registran desde el detalle del
+              vehículo, una vez creado.
+            </p>
+          </>
+        )}
+      </fieldset>
 
       <Field label="Estado">
         <select

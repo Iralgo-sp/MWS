@@ -2,9 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { VehicleWithDetails } from "../api/types";
-import { VEHICLE_TYPE_ICONS, VEHICLE_TYPE_LABELS } from "../constants";
+import { PAYMENT_METHOD_LABELS, VEHICLE_TYPE_ICONS, VEHICLE_TYPE_LABELS } from "../constants";
 import MaintenanceSection from "../components/MaintenanceSection";
 import InsuranceSection from "../components/InsuranceSection";
+import InstallmentsSection from "../components/InstallmentsSection";
+import DocumentsSection from "../components/DocumentsSection";
 
 export default function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -76,11 +78,39 @@ export default function VehicleDetail() {
           value={vehicle.purchasePrice != null ? `${vehicle.purchasePrice} €` : undefined}
         />
         <Info label="Estado" value={vehicle.status === "activo" ? "Activo" : "Vendido"} />
+        <Info label="Forma de pago" value={PAYMENT_METHOD_LABELS[vehicle.paymentMethod]} />
+        <Info label="Concesionario" value={vehicle.dealerName ?? undefined} />
+        <Info label="Dirección del concesionario" value={vehicle.dealerAddress ?? undefined} />
+        <Info label="Agente / comercial" value={vehicle.dealerAgent ?? undefined} />
+        {vehicle.paymentMethod === "financiado" && (
+          <>
+            <Info label="Entidad financiera" value={vehicle.financingLender ?? undefined} />
+            <Info
+              label="Importe financiado"
+              value={vehicle.financingAmount != null ? `${vehicle.financingAmount} €` : undefined}
+            />
+            <Info
+              label="Interés"
+              value={vehicle.financingInterestRate != null ? `${vehicle.financingInterestRate} %` : undefined}
+            />
+            <Info
+              label="Plazo"
+              value={vehicle.financingTermMonths != null ? `${vehicle.financingTermMonths} meses` : undefined}
+            />
+            {vehicle.financingNotes && (
+              <Info label="Notas de la financiación" value={vehicle.financingNotes} className="col-span-full" />
+            )}
+          </>
+        )}
         {vehicle.notes && <Info label="Notas" value={vehicle.notes} className="col-span-full" />}
       </dl>
 
       <MaintenanceSection vehicleId={vehicle.id} records={vehicle.maintenanceRecords} onChange={load} />
       <InsuranceSection vehicleId={vehicle.id} policies={vehicle.insurancePolicies} onChange={load} />
+      {vehicle.paymentMethod === "financiado" && (
+        <InstallmentsSection vehicleId={vehicle.id} installments={vehicle.installments} onChange={load} />
+      )}
+      <DocumentsSection vehicleId={vehicle.id} documents={vehicle.documents} onChange={load} />
     </div>
   );
 }

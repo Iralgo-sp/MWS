@@ -1,6 +1,8 @@
+import path from "node:path";
+import { rm } from "node:fs/promises";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../prisma.js";
-import { VEHICLE_TYPES, VEHICLE_STATUSES } from "../types.js";
+import { VEHICLE_TYPES, VEHICLE_STATUSES, PAYMENT_METHODS } from "../types.js";
 
 interface VehicleBody {
   type: string;
@@ -13,6 +15,15 @@ interface VehicleBody {
   purchasePrice?: number;
   notes?: string;
   status?: string;
+  dealerName?: string;
+  dealerAddress?: string;
+  dealerAgent?: string;
+  paymentMethod?: string;
+  financingLender?: string;
+  financingAmount?: number;
+  financingInterestRate?: number;
+  financingTermMonths?: number;
+  financingNotes?: string;
 }
 
 function validateVehicleBody(body: Partial<VehicleBody>, partial: boolean) {
@@ -29,6 +40,9 @@ function validateVehicleBody(body: Partial<VehicleBody>, partial: boolean) {
   if (body.status !== undefined && !VEHICLE_STATUSES.includes(body.status as any)) {
     return `status debe ser uno de: ${VEHICLE_STATUSES.join(", ")}`;
   }
+  if (body.paymentMethod !== undefined && !PAYMENT_METHODS.includes(body.paymentMethod as any)) {
+    return `paymentMethod debe ser uno de: ${PAYMENT_METHODS.join(", ")}`;
+  }
   return null;
 }
 
@@ -37,7 +51,9 @@ export default async function vehicleRoutes(app: FastifyInstance) {
     const vehicles = await prisma.vehicle.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        _count: { select: { maintenanceRecords: true, insurancePolicies: true } },
+        _count: {
+          select: { maintenanceRecords: true, insurancePolicies: true, installments: true, documents: true },
+        },
       },
     });
     return vehicles;
@@ -50,6 +66,8 @@ export default async function vehicleRoutes(app: FastifyInstance) {
       include: {
         maintenanceRecords: { orderBy: { date: "desc" } },
         insurancePolicies: { orderBy: { startDate: "desc" } },
+        installments: { orderBy: { paymentDate: "desc" } },
+        documents: { orderBy: { uploadedAt: "desc" } },
       },
     });
     if (!vehicle) return reply.code(404).send({ error: "Vehículo no encontrado" });
@@ -73,6 +91,15 @@ export default async function vehicleRoutes(app: FastifyInstance) {
         purchasePrice: body.purchasePrice,
         notes: body.notes,
         status: body.status ?? "activo",
+        dealerName: body.dealerName,
+        dealerAddress: body.dealerAddress,
+        dealerAgent: body.dealerAgent,
+        paymentMethod: body.paymentMethod ?? "contado",
+        financingLender: body.financingLender,
+        financingAmount: body.financingAmount,
+        financingInterestRate: body.financingInterestRate,
+        financingTermMonths: body.financingTermMonths,
+        financingNotes: body.financingNotes,
       },
     });
     return reply.code(201).send(vehicle);
@@ -104,6 +131,7 @@ export default async function vehicleRoutes(app: FastifyInstance) {
     if (!existing) return reply.code(404).send({ error: "Vehículo no encontrado" });
 
     await prisma.vehicle.delete({ where: { id } });
+    await rm(path.resolve("uploads", id), { recursive: true, force: true });
     return reply.code(204).send();
   });
 }

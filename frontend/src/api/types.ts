@@ -2,6 +2,7 @@ export type VehicleType = "bici" | "moto" | "coche" | "otro";
 export type VehicleStatus = "activo" | "vendido";
 export type MaintenanceType = "reparacion" | "revision" | "itv" | "otro";
 export type InsuranceType = "terceros" | "todo_riesgo" | "otro";
+export type PaymentMethod = "contado" | "financiado";
 
 export interface Vehicle {
   id: string;
@@ -17,12 +18,28 @@ export interface Vehicle {
   status: VehicleStatus;
   createdAt: string;
   updatedAt: string;
-  _count?: { maintenanceRecords: number; insurancePolicies: number };
+  dealerName?: string | null;
+  dealerAddress?: string | null;
+  dealerAgent?: string | null;
+  paymentMethod: PaymentMethod;
+  financingLender?: string | null;
+  financingAmount?: number | null;
+  financingInterestRate?: number | null;
+  financingTermMonths?: number | null;
+  financingNotes?: string | null;
+  _count?: {
+    maintenanceRecords: number;
+    insurancePolicies: number;
+    installments: number;
+    documents: number;
+  };
 }
 
 export interface VehicleWithDetails extends Vehicle {
   maintenanceRecords: MaintenanceRecord[];
   insurancePolicies: InsurancePolicy[];
+  installments: Installment[];
+  documents: VehicleDocument[];
 }
 
 export interface MaintenanceRecord {
@@ -48,4 +65,26 @@ export interface InsurancePolicy {
   annualCost?: number | null;
   notes?: string | null;
   createdAt: string;
+}
+
+export interface Installment {
+  id: string;
+  vehicleId: string;
+  paymentDate: string;
+  installmentNumber?: number | null;
+  principalAmount?: number | null;
+  interestAmount?: number | null;
+  totalAmount?: number | null;
+  notes?: string | null;
+  createdAt: string;
+}
+
+export interface VehicleDocument {
+  id: string;
+  vehicleId: string;
+  label: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: string;
 }
