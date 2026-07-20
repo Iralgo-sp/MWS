@@ -1,0 +1,58 @@
+// Nota: SQLite no soporta enums nativos en Prisma, así que los tipos
+// (vehicle.type, maintenance.type, insurance.type) se validan como
+// strings de una lista cerrada en el backend (ver src/types.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Vehicle {
+  id            String   @id @default(cuid())
+  type          String // bici | moto | coche | otro
+  alias         String
+  brand         String?
+  model         String?
+  year          Int?
+  plate         String? // matrícula o nº de bastidor
+  purchaseDate  DateTime?
+  purchasePrice Float?
+  notes         String?
+  status        String   @default("activo") // activo | vendido
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  maintenanceRecords MaintenanceRecord[]
+  insurancePolicies  InsurancePolicy[]
+}
+
+model MaintenanceRecord {
+  id          String   @id @default(cuid())
+  vehicleId   String
+  vehicle     Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  date        DateTime
+  type        String // reparacion | revision | itv | otro
+  description String
+  cost        Float?
+  workshop    String?
+  mileage     Int?
+  createdAt   DateTime @default(now())
+}
+
+model InsurancePolicy {
+  id           String    @id @default(cuid())
+  vehicleId    String
+  vehicle      Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  company      String
+  policyNumber String
+  type         String // terceros | todo_riesgo | otro
+  startDate    DateTime
+  endDate      DateTime?
+  annualCost   Float?
+  notes        String?
+  createdAt    DateTime  @default(now())
+}
