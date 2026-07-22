@@ -64,10 +64,19 @@ export default async function vehicleRoutes(app: FastifyInstance) {
     const vehicle = await prisma.vehicle.findUnique({
       where: { id },
       include: {
-        maintenanceRecords: { orderBy: { date: "desc" } },
-        insurancePolicies: { orderBy: { startDate: "desc" } },
+        maintenanceRecords: {
+          orderBy: { date: "desc" },
+          include: { documents: { orderBy: { uploadedAt: "desc" } } },
+        },
+        insurancePolicies: {
+          orderBy: { startDate: "desc" },
+          include: { documents: { orderBy: { uploadedAt: "desc" } } },
+        },
         installments: { orderBy: { paymentDate: "desc" } },
-        documents: { orderBy: { uploadedAt: "desc" } },
+        documents: {
+          where: { maintenanceRecordId: null, insurancePolicyId: null },
+          orderBy: { uploadedAt: "desc" },
+        },
       },
     });
     if (!vehicle) return reply.code(404).send({ error: "Vehículo no encontrado" });

@@ -118,7 +118,7 @@ export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
   if (loading) return <p className="text-slate-500">Cargando…</p>;
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-lg space-y-4">
+    <form onSubmit={handleSubmit} className="mx-auto max-w-lg space-y-4">
       <h1 className="text-xl font-semibold">
         {mode === "create" ? "Nuevo vehículo" : "Editar vehículo"}
       </h1>

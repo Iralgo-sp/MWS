@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { Installment } from "../api/types";
-import { inputClass } from "../constants";
+import { formatNumber, inputClass } from "../constants";
 
 const emptyForm = {
   paymentDate: "",
@@ -142,9 +142,9 @@ export default function InstallmentsSection({
                 {new Date(i.paymentDate).toLocaleDateString()}
               </p>
               <p className="text-xs text-slate-500">
-                {i.principalAmount != null ? `Base: ${i.principalAmount} € · ` : ""}
-                {i.interestAmount != null ? `Intereses: ${i.interestAmount} € · ` : ""}
-                {i.totalAmount != null ? `Total: ${i.totalAmount} €` : ""}
+                {i.principalAmount != null ? `Base: ${formatNumber(i.principalAmount)} € · ` : ""}
+                {i.interestAmount != null ? `Intereses: ${formatNumber(i.interestAmount)} € · ` : ""}
+                {i.totalAmount != null ? `Total: ${formatNumber(i.totalAmount)} €` : ""}
               </p>
               {i.notes && <p className="text-slate-600 dark:text-slate-400">{i.notes}</p>}
             </div>

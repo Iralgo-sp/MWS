@@ -11,8 +11,11 @@ const BASE = "/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { "Content-Type": "application/json" },
     ...options,
+    headers: {
+      ...(options?.body ? { "Content-Type": "application/json" } : {}),
+      ...options?.headers,
+    },
   });
   if (!res.ok) {
     const body = await res.json().catch(() => ({}) as { error?: string });
@@ -72,11 +75,23 @@ export const api = {
     remove: (id: string) => request<void>(`/installments/${id}`, { method: "DELETE" }),
   },
   documents: {
-    upload: (vehicleId: string, file: File, label: string) => {
+    uploadToVehicle: (vehicleId: string, file: File, label: string) => {
       const formData = new FormData();
       formData.append("label", label);
       formData.append("file", file);
       return upload<VehicleDocument>(`/vehicles/${vehicleId}/documents`, formData);
+    },
+    uploadToMaintenance: (maintenanceId: string, file: File, label: string) => {
+      const formData = new FormData();
+      formData.append("label", label);
+      formData.append("file", file);
+      return upload<VehicleDocument>(`/maintenance/${maintenanceId}/documents`, formData);
+    },
+    uploadToInsurance: (policyId: string, file: File, label: string) => {
+      const formData = new FormData();
+      formData.append("label", label);
+      formData.append("file", file);
+      return upload<VehicleDocument>(`/insurance/${policyId}/documents`, formData);
     },
     remove: (id: string) => request<void>(`/documents/${id}`, { method: "DELETE" }),
     downloadUrl: (id: string) => `${BASE}/documents/${id}/download`,

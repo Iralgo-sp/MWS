@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { createReadStream } from "node:fs";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "../prisma.js";
 
 const UPLOADS_ROOT = path.resolve("uploads");
@@ -11,44 +11,71 @@ function vehicleUploadDir(vehicleId: string) {
   return path.join(UPLOADS_ROOT, vehicleId);
 }
 
+async function handleUpload(
+  req: FastifyRequest,
+  reply: FastifyReply,
+  vehicleId: string,
+  extra: { maintenanceRecordId?: string; insurancePolicyId?: string },
+) {
+  let label: string | undefined;
+  let fileInfo: { filename: string; mimeType: string; buffer: Buffer } | undefined;
+
+  for await (const part of req.parts()) {
+    if (part.type === "file") {
+      const buffer = await part.toBuffer();
+      fileInfo = { filename: part.filename, mimeType: part.mimetype, buffer };
+    } else if (part.fieldname === "label") {
+      label = part.value as string;
+    }
+  }
+
+  if (!fileInfo) return reply.code(400).send({ error: "Falta el fichero" });
+  if (!label || !label.trim()) return reply.code(400).send({ error: "label es obligatoria" });
+
+  const safeName = path.basename(fileInfo.filename).replace(/[^\w.\-]/g, "_");
+  const storedFilename = `${randomUUID()}-${safeName}`;
+  const dir = vehicleUploadDir(vehicleId);
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, storedFilename), fileInfo.buffer);
+
+  const document = await prisma.document.create({
+    data: {
+      vehicleId,
+      maintenanceRecordId: extra.maintenanceRecordId,
+      insurancePolicyId: extra.insurancePolicyId,
+      label: label.trim(),
+      originalName: fileInfo.filename,
+      storedFilename,
+      mimeType: fileInfo.mimeType,
+      size: fileInfo.buffer.length,
+    },
+  });
+  return reply.code(201).send(document);
+}
+
 export default async function documentRoutes(app: FastifyInstance) {
   app.post("/api/vehicles/:vehicleId/documents", async (req, reply) => {
     const { vehicleId } = req.params as { vehicleId: string };
     const vehicle = await prisma.vehicle.findUnique({ where: { id: vehicleId } });
     if (!vehicle) return reply.code(404).send({ error: "Vehículo no encontrado" });
 
-    let label: string | undefined;
-    let fileInfo: { filename: string; mimeType: string; buffer: Buffer } | undefined;
+    return handleUpload(req, reply, vehicleId, {});
+  });
 
-    for await (const part of req.parts()) {
-      if (part.type === "file") {
-        const buffer = await part.toBuffer();
-        fileInfo = { filename: part.filename, mimeType: part.mimetype, buffer };
-      } else if (part.fieldname === "label") {
-        label = part.value as string;
-      }
-    }
+  app.post("/api/maintenance/:id/documents", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const record = await prisma.maintenanceRecord.findUnique({ where: { id } });
+    if (!record) return reply.code(404).send({ error: "Registro no encontrado" });
 
-    if (!fileInfo) return reply.code(400).send({ error: "Falta el fichero" });
-    if (!label || !label.trim()) return reply.code(400).send({ error: "label es obligatoria" });
+    return handleUpload(req, reply, record.vehicleId, { maintenanceRecordId: id });
+  });
 
-    const safeName = path.basename(fileInfo.filename).replace(/[^\w.\-]/g, "_");
-    const storedFilename = `${randomUUID()}-${safeName}`;
-    const dir = vehicleUploadDir(vehicleId);
-    await mkdir(dir, { recursive: true });
-    await writeFile(path.join(dir, storedFilename), fileInfo.buffer);
+  app.post("/api/insurance/:id/documents", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const policy = await prisma.insurancePolicy.findUnique({ where: { id } });
+    if (!policy) return reply.code(404).send({ error: "Póliza no encontrada" });
 
-    const document = await prisma.document.create({
-      data: {
-        vehicleId,
-        label: label.trim(),
-        originalName: fileInfo.filename,
-        storedFilename,
-        mimeType: fileInfo.mimeType,
-        size: fileInfo.buffer.length,
-      },
-    });
-    return reply.code(201).send(document);
+    return handleUpload(req, reply, policy.vehicleId, { insurancePolicyId: id });
   });
 
   app.get("/api/documents/:id/download", async (req, reply) => {

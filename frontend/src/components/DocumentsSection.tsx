@@ -3,7 +3,13 @@ import { api } from "../api/client";
 import type { VehicleDocument } from "../api/types";
 import { inputClass } from "../constants";
 
-const LABEL_SUGGESTIONS = ["Factura de compra", "Contrato de financiación", "Póliza de seguro", "Otro"];
+const LABEL_SUGGESTIONS = [
+  "Factura de compra",
+  "Ficha técnica",
+  "Permiso de circulación",
+  "Contrato de financiación",
+  "Otro",
+];
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -40,7 +46,7 @@ export default function DocumentsSection({
     }
     setUploading(true);
     try {
-      await api.documents.upload(vehicleId, file, label.trim());
+      await api.documents.uploadToVehicle(vehicleId, file, label.trim());
       setLabel("");
       if (fileInputRef.current) fileInputRef.current.value = "";
       setShowForm(false);

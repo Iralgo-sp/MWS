@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import type { MaintenanceRecord, MaintenanceType } from "../api/types";
-import { MAINTENANCE_TYPE_LABELS, MAINTENANCE_TYPES, inputClass } from "../constants";
+import { MAINTENANCE_TYPE_LABELS, MAINTENANCE_TYPES, formatNumber, inputClass } from "../constants";
 
 const emptyForm = {
   date: "",
@@ -24,6 +25,7 @@ export default function MaintenanceSection({
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const totalCost = records.reduce((sum, r) => sum + (r.cost ?? 0), 0);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -45,16 +47,15 @@ export default function MaintenanceSection({
     }
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este registro?")) return;
-    await api.maintenance.remove(id);
-    onChange();
-  }
-
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Mantenimiento y reparaciones</h2>
+        <div>
+          <h2 className="text-lg font-semibold">Mantenimiento y reparaciones</h2>
+          {totalCost > 0 && (
+            <p className="text-sm text-slate-500">Total gastado: {formatNumber(totalCost)} €</p>
+          )}
+        </div>
         <button
           onClick={() => setShowForm((s) => !s)}
           className="text-sm font-medium text-slate-700 underline dark:text-slate-300"
@@ -134,24 +135,19 @@ export default function MaintenanceSection({
 
       <ul className="space-y-2">
         {records.map((r) => (
-          <li
-            key={r.id}
-            className="flex items-start justify-between rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-slate-800 dark:bg-slate-900"
-          >
-            <div>
-              <p className="font-medium">
-                {MAINTENANCE_TYPE_LABELS[r.type]} · {new Date(r.date).toLocaleDateString()}
-              </p>
-              <p className="text-slate-600 dark:text-slate-400">{r.description}</p>
-              <p className="text-xs text-slate-500">
-                {r.cost != null ? `${r.cost} € · ` : ""}
-                {r.workshop ?? ""}
-                {r.mileage != null ? ` · ${r.mileage} km` : ""}
-              </p>
-            </div>
-            <button onClick={() => handleDelete(r.id)} className="text-xs text-red-600">
-              Eliminar
-            </button>
+          <li key={r.id}>
+            <Link
+              to={`/vehicles/${vehicleId}/maintenance/${r.id}`}
+              className="flex items-center justify-between rounded-lg border border-slate-200 bg-white p-3 text-sm hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800"
+            >
+              <div>
+                <p className="font-medium">
+                  {MAINTENANCE_TYPE_LABELS[r.type]} · {new Date(r.date).toLocaleDateString()}
+                </p>
+                {r.workshop && <p className="text-slate-600 dark:text-slate-400">{r.workshop}</p>}
+              </div>
+              <span className="text-slate-400">→</span>
+            </Link>
           </li>
         ))}
       </ul>

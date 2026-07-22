@@ -56,6 +56,7 @@ model MaintenanceRecord {
   workshop    String?
   mileage     Int?
   createdAt   DateTime @default(now())
+  documents   Document[]
 }
 
 model InsurancePolicy {
@@ -64,12 +65,13 @@ model InsurancePolicy {
   vehicle      Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   company      String
   policyNumber String
-  type         String // terceros | todo_riesgo | otro
+  type         String // terceros | terceros_ampliado | todo_riesgo | otro
   startDate    DateTime
   endDate      DateTime?
   annualCost   Float?
   notes        String?
   createdAt    DateTime  @default(now())
+  documents    Document[]
 }
 
 model Installment {
@@ -86,13 +88,17 @@ model Installment {
 }
 
 model Document {
-  id             String   @id @default(cuid())
-  vehicleId      String
-  vehicle        Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  label          String // p.ej. "Factura de compra", "Contrato de financiación"
-  originalName   String
-  storedFilename String // nombre físico en disco, evita colisiones
-  mimeType       String
-  size           Int
-  uploadedAt     DateTime @default(now())
+  id                  String             @id @default(cuid())
+  vehicleId           String
+  vehicle             Vehicle            @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  maintenanceRecordId String?
+  maintenanceRecord   MaintenanceRecord? @relation(fields: [maintenanceRecordId], references: [id], onDelete: Cascade)
+  insurancePolicyId   String?
+  insurancePolicy     InsurancePolicy?   @relation(fields: [insurancePolicyId], references: [id], onDelete: Cascade)
+  label               String // p.ej. "Factura de compra", "Contrato de financiación"
+  originalName        String
+  storedFilename      String // nombre físico en disco, evita colisiones
+  mimeType            String
+  size                Int
+  uploadedAt          DateTime           @default(now())
 }
