@@ -35,11 +35,21 @@ export interface Vehicle {
   };
 }
 
+export interface OdometerReading {
+  id: string;
+  vehicleId: string;
+  date: string;
+  mileage: number;
+  notes?: string | null;
+  createdAt: string;
+}
+
 export interface VehicleWithDetails extends Vehicle {
   maintenanceRecords: MaintenanceRecord[];
   insurancePolicies: InsurancePolicy[];
   installments: Installment[];
   documents: VehicleDocument[];
+  odometerReadings: OdometerReading[];
 }
 
 export interface MaintenanceRecord {

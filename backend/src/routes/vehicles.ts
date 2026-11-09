@@ -73,6 +73,7 @@ export default async function vehicleRoutes(app: FastifyInstance) {
           include: { documents: { orderBy: { uploadedAt: "desc" } } },
         },
         installments: { orderBy: { paymentDate: "desc" } },
+        odometerReadings: { orderBy: { date: "desc" } },
         documents: {
           where: { maintenanceRecordId: null, insurancePolicyId: null },
           orderBy: { uploadedAt: "desc" },

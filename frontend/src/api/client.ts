@@ -2,6 +2,7 @@ import type {
   Installment,
   InsurancePolicy,
   MaintenanceRecord,
+  OdometerReading,
   Vehicle,
   VehicleDocument,
   VehicleWithDetails,
@@ -73,6 +74,18 @@ export const api = {
     update: (id: string, data: Record<string, unknown>) =>
       request<Installment>(`/installments/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/installments/${id}`, { method: "DELETE" }),
+  },
+  odometer: {
+    list: (vehicleId: string) =>
+      request<OdometerReading[]>(`/vehicles/${vehicleId}/odometer`),
+    create: (vehicleId: string, data: Record<string, unknown>) =>
+      request<OdometerReading>(`/vehicles/${vehicleId}/odometer`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<OdometerReading>(`/odometer/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    remove: (id: string) => request<void>(`/odometer/${id}`, { method: "DELETE" }),
   },
   documents: {
     uploadToVehicle: (vehicleId: string, file: File, label: string) => {

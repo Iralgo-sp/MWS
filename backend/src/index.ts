@@ -8,6 +8,7 @@ import maintenanceRoutes from "./routes/maintenance.js";
 import insuranceRoutes from "./routes/insurance.js";
 import installmentRoutes from "./routes/installments.js";
 import documentRoutes from "./routes/documents.js";
+import odometerRoutes from "./routes/odometer.js";
 
 const app = Fastify({ logger: true });
 
@@ -21,6 +22,7 @@ await app.register(maintenanceRoutes);
 await app.register(insuranceRoutes);
 await app.register(installmentRoutes);
 await app.register(documentRoutes);
+await app.register(odometerRoutes);
 
 app.get("/api/health", async () => ({ ok: true }));
 
