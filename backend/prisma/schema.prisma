@@ -19,7 +19,9 @@ model Vehicle {
   brand         String?
   model         String?
   year          Int?
-  plate         String? // matrícula o nº de bastidor
+  plate         String? // matrícula
+  chassis       String? // número de bastidor / VIN
+  color         String?
   purchaseDate  DateTime?
   purchasePrice Float?
   notes         String?
@@ -39,6 +41,10 @@ model Vehicle {
   financingInterestRate Float? // interés (%)
   financingTermMonths   Int? // plazo en meses
   financingNotes        String?
+
+  // Recordatorios proactivos
+  nextItv           DateTime?
+  serviceIntervalKm Int?
 
   maintenanceRecords MaintenanceRecord[]
   insurancePolicies  InsurancePolicy[]
@@ -65,15 +71,20 @@ model InsurancePolicy {
   id           String    @id @default(cuid())
   vehicleId    String
   vehicle      Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  year         Int       // año de la póliza (p.ej. 2025)
+  status       String    @default("presupuesto") // presupuesto | activa | descartada
+  isSelected   Boolean   @default(false) // presupuesto ganador del año
   company      String
-  policyNumber String
+  policyNumber String    @default("") // nº de póliza (vacío en presupuestos)
   type         String // terceros | terceros_ampliado | todo_riesgo | otro
   startDate    DateTime
   endDate      DateTime?
-  annualCost   Float?
-  notes        String?
-  createdAt    DateTime  @default(now())
-  documents    Document[]
+  annualCost      Float?
+  hasFranchise    Boolean  @default(false)
+  franchiseAmount Float?
+  notes           String?
+  createdAt       DateTime  @default(now())
+  documents       Document[]
 }
 
 model Installment {
@@ -81,10 +92,13 @@ model Installment {
   vehicleId         String
   vehicle           Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   paymentDate       DateTime
+  concept           String   @default("cuota") // entrada | pago_previo | pago_final | cuota | otro
+  isPaid            Boolean  @default(false)
   installmentNumber Int?
   principalAmount   Float? // base/capital
   interestAmount    Float?
   totalAmount       Float?
+  remainingBalance  Float? // saldo pendiente tras el pago
   notes             String?
   createdAt         DateTime @default(now())
 }

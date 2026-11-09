@@ -52,7 +52,7 @@ export default function RecordAttachments({
           <a
             href={api.documents.downloadUrl(d.id)}
             download={d.originalName}
-            className="truncate text-slate-600 underline dark:text-slate-400"
+            className="truncate text-teal-600 underline hover:text-teal-500"
           >
             📎 {d.originalName}
           </a>
@@ -61,7 +61,7 @@ export default function RecordAttachments({
           </button>
         </div>
       ))}
-      <label className="inline-block cursor-pointer text-xs font-medium text-slate-700 underline dark:text-slate-300">
+      <label className="inline-block cursor-pointer text-xs font-medium text-teal-600 hover:text-teal-500">
         {uploading ? "Subiendo…" : buttonLabel}
         <input
           ref={fileInputRef}

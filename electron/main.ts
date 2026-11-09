@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from "electron";
+import { app, BrowserWindow, ipcMain } from "electron";
 import path from "node:path";
 import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
@@ -117,6 +117,7 @@ function createWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
+      preload: path.join(__dirname, "preload.js"),
     },
     title: "MWS — Gestión de Vehículos",
     backgroundColor: "#f8fafc",
@@ -124,11 +125,13 @@ function createWindow(): void {
 
   const url = isDev ? "http://localhost:5173" : `http://localhost:${PORT}`;
   win.loadURL(url);
-  win.once("ready-to-show", () => win?.show());
+  win.once("ready-to-show", () => { win?.maximize(); win?.show(); });
   win.on("closed", () => {
     win = null;
   });
 }
+
+ipcMain.on("app:quit", () => app.quit());
 
 app.whenReady().then(async () => {
   if (!isDev) {

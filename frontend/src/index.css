@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Force class-based dark mode — OS dark mode won't trigger dark: variants */
+@variant dark (&:is(.dark *));
+
 :root {
   color-scheme: light;
 }
@@ -12,5 +15,14 @@ body,
 }
 
 body {
-  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  font-family: "Inter", system-ui, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Force native controls to light mode regardless of OS setting */
+input,
+select,
+textarea,
+button {
+  color-scheme: light;
 }

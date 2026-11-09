@@ -70,7 +70,7 @@ export default function DocumentsSection({
         <h2 className="text-lg font-semibold">Documentos</h2>
         <button
           onClick={() => setShowForm((s) => !s)}
-          className="text-sm font-medium text-slate-700 underline dark:text-slate-300"
+          className="text-sm font-medium text-teal-600 hover:text-teal-500"
         >
           {showForm ? "Cancelar" : "+ Añadir"}
         </button>
@@ -79,7 +79,7 @@ export default function DocumentsSection({
       {showForm && (
         <form
           onSubmit={handleSubmit}
-          className="space-y-3 rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900"
+          className="space-y-3 rounded-lg border border-slate-200 bg-white p-4"
         >
           {error && <p className="text-sm text-red-600">{error}</p>}
           <input
@@ -99,7 +99,7 @@ export default function DocumentsSection({
           <button
             type="submit"
             disabled={uploading}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 dark:bg-white dark:text-slate-900"
+            className="rounded-md bg-teal-600 hover:bg-teal-500 px-4 py-2 text-sm font-medium text-white disabled:opacity-50 transition-colors"
           >
             {uploading ? "Subiendo…" : "Subir"}
           </button>
@@ -114,14 +114,14 @@ export default function DocumentsSection({
         {documents.map((d) => (
           <li
             key={d.id}
-            className="flex items-start justify-between rounded-lg border border-slate-200 bg-white p-3 text-sm dark:border-slate-800 dark:bg-slate-900"
+            className="flex items-start justify-between rounded-lg border border-slate-200 bg-white p-3 text-sm"
           >
             <div>
               <p className="font-medium">{d.label}</p>
               <a
                 href={api.documents.downloadUrl(d.id)}
                 download={d.originalName}
-                className="text-slate-600 underline dark:text-slate-400"
+                className="text-teal-600 underline hover:text-teal-500"
               >
                 {d.originalName}
               </a>

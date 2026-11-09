@@ -11,6 +11,8 @@ interface VehicleBody {
   model?: string;
   year?: number;
   plate?: string;
+  chassis?: string;
+  color?: string;
   purchaseDate?: string;
   purchasePrice?: number;
   notes?: string;
@@ -24,6 +26,8 @@ interface VehicleBody {
   financingInterestRate?: number;
   financingTermMonths?: number;
   financingNotes?: string;
+  nextItv?: string | null;
+  serviceIntervalKm?: number | null;
 }
 
 function validateVehicleBody(body: Partial<VehicleBody>, partial: boolean) {
@@ -97,6 +101,8 @@ export default async function vehicleRoutes(app: FastifyInstance) {
         model: body.model,
         year: body.year,
         plate: body.plate,
+        chassis: body.chassis,
+        color: body.color,
         purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : undefined,
         purchasePrice: body.purchasePrice,
         notes: body.notes,
@@ -110,6 +116,8 @@ export default async function vehicleRoutes(app: FastifyInstance) {
         financingInterestRate: body.financingInterestRate,
         financingTermMonths: body.financingTermMonths,
         financingNotes: body.financingNotes,
+        nextItv: body.nextItv ? new Date(body.nextItv) : undefined,
+        serviceIntervalKm: body.serviceIntervalKm,
       },
     });
     return reply.code(201).send(vehicle);
@@ -129,7 +137,8 @@ export default async function vehicleRoutes(app: FastifyInstance) {
       data: {
         ...body,
         alias: body.alias?.trim(),
-        purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : undefined,
+        purchaseDate: body.purchaseDate ? new Date(body.purchaseDate) : body.purchaseDate,
+        nextItv: body.nextItv ? new Date(body.nextItv) : body.nextItv,
       },
     });
     return vehicle;

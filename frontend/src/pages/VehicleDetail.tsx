@@ -9,7 +9,7 @@ import InstallmentsSection from "../components/InstallmentsSection";
 import OdometerSection from "../components/OdometerSection";
 import DocumentsSection from "../components/DocumentsSection";
 
-type TabId = "mantenimiento" | "seguros" | "financiacion" | "kilometraje" | "documentos";
+type TabId = "mantenimiento" | "seguros" | "pagos" | "kilometraje" | "documentos";
 
 export default function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
@@ -43,7 +43,7 @@ export default function VehicleDetail() {
   const tabs: { id: TabId; label: string }[] = [
     { id: "mantenimiento", label: "Mantenimiento" },
     { id: "seguros", label: "Seguros" },
-    ...(vehicle.paymentMethod === "financiado" ? [{ id: "financiacion" as TabId, label: "Financiación" }] : []),
+    { id: "pagos", label: "Pagos" },
     { id: "kilometraje", label: "Kilometraje" },
     { id: "documentos", label: "Documentos" },
   ];
@@ -65,7 +65,9 @@ export default function VehicleDetail() {
             {vehicle.brand ? ` · ${vehicle.brand}` : ""}
             {vehicle.model ? ` ${vehicle.model}` : ""}
             {vehicle.year ? ` · ${vehicle.year}` : ""}
+            {vehicle.color ? ` · ${vehicle.color}` : ""}
             {vehicle.plate ? ` · ${vehicle.plate}` : ""}
+            {vehicle.chassis ? ` · ${vehicle.chassis}` : ""}
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
@@ -96,9 +98,11 @@ export default function VehicleDetail() {
       {/* Two-column layout */}
       <div className="flex gap-6 items-start">
         {/* Left panel: vehicle info */}
-        <aside className="w-72 shrink-0 space-y-4">
+        <aside className="w-80 shrink-0 space-y-4">
           <InfoCard title="Datos del vehículo">
-            <InfoField label="Matrícula / bastidor" value={vehicle.plate ?? undefined} />
+            {vehicle.plate && <InfoField label="Matrícula" value={vehicle.plate} />}
+            {vehicle.chassis && <InfoField label="Bastidor / VIN" value={vehicle.chassis} />}
+            {vehicle.color && <InfoField label="Color" value={vehicle.color} />}
             <InfoField
               label="Fecha de compra"
               value={
@@ -144,6 +148,8 @@ export default function VehicleDetail() {
               {vehicle.financingNotes && <InfoField label="Notas" value={vehicle.financingNotes} />}
             </InfoCard>
           )}
+
+          <TcoPanel vehicle={vehicle} />
         </aside>
 
         {/* Right panel: tabs */}
@@ -173,8 +179,17 @@ export default function VehicleDetail() {
             {tab === "seguros" && (
               <InsuranceSection vehicleId={vehicle.id} policies={vehicle.insurancePolicies} onChange={load} />
             )}
-            {tab === "financiacion" && vehicle.paymentMethod === "financiado" && (
-              <InstallmentsSection vehicleId={vehicle.id} installments={vehicle.installments} onChange={load} />
+            {tab === "pagos" && (
+              <InstallmentsSection
+                vehicleId={vehicle.id}
+                installments={vehicle.installments}
+                onChange={load}
+                paymentMethod={vehicle.paymentMethod}
+                purchasePrice={vehicle.purchasePrice ?? undefined}
+                financingAmount={vehicle.financingAmount ?? undefined}
+                financingInterestRate={vehicle.financingInterestRate ?? undefined}
+                financingTermMonths={vehicle.financingTermMonths ?? undefined}
+              />
             )}
             {tab === "kilometraje" && (
               <OdometerSection vehicleId={vehicle.id} readings={vehicle.odometerReadings} onChange={load} />
@@ -186,6 +201,65 @@ export default function VehicleDetail() {
         </div>
       </div>
     </div>
+  );
+}
+
+function TcoPanel({ vehicle }: { vehicle: VehicleWithDetails }) {
+  const purchasePrice = vehicle.purchasePrice ?? 0;
+  const totalMaintenance = vehicle.maintenanceRecords.reduce((s, r) => s + (r.cost ?? 0), 0);
+  const totalInsurance = vehicle.insurancePolicies
+    .filter((p) => p.isSelected)
+    .reduce((s, p) => s + (p.annualCost ?? 0), 0);
+  const totalInterest = vehicle.installments
+    .filter((i) => i.isPaid)
+    .reduce((s, i) => s + (i.interestAmount ?? 0), 0);
+  const tcoTotal = purchasePrice + totalMaintenance + totalInsurance + totalInterest;
+
+  if (tcoTotal === 0) return null;
+
+  const monthsOwned = vehicle.purchaseDate
+    ? Math.max(1, Math.round((Date.now() - new Date(vehicle.purchaseDate).getTime()) / (1000 * 60 * 60 * 24 * 30.44)))
+    : null;
+  const euroPerMonth = monthsOwned ? tcoTotal / monthsOwned : null;
+
+  const sortedReadings = [...vehicle.odometerReadings].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  const totalKm =
+    sortedReadings.length >= 2
+      ? sortedReadings[sortedReadings.length - 1].mileage - sortedReadings[0].mileage
+      : sortedReadings.length === 1
+      ? sortedReadings[0].mileage
+      : null;
+  const euroPerKm = totalKm && totalKm > 0 ? tcoTotal / totalKm : null;
+
+  return (
+    <InfoCard title="Coste total (TCO)">
+      <InfoField label="Precio de compra" value={`${formatNumber(purchasePrice)} €`} />
+      {totalMaintenance > 0 && <InfoField label="Mantenimiento" value={`${formatNumber(totalMaintenance)} €`} />}
+      {totalInsurance > 0 && <InfoField label="Seguros" value={`${formatNumber(totalInsurance)} €`} />}
+      {totalInterest > 0 && <InfoField label="Intereses financiación" value={`${formatNumber(totalInterest)} €`} />}
+      <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100">
+        <dt className="text-xs text-slate-400">Total acumulado</dt>
+        <dd className="text-sm font-semibold text-slate-900 mt-0.5">{formatNumber(tcoTotal)} €</dd>
+      </div>
+      {(euroPerMonth != null || euroPerKm != null) && (
+        <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
+          {euroPerMonth != null && (
+            <div className="px-4 py-2.5 text-center">
+              <p className="text-xs text-slate-400">€ / mes</p>
+              <p className="text-sm font-semibold text-teal-700 mt-0.5">{formatNumber(euroPerMonth)}</p>
+            </div>
+          )}
+          {euroPerKm != null && (
+            <div className="px-4 py-2.5 text-center">
+              <p className="text-xs text-slate-400">€ / km</p>
+              <p className="text-sm font-semibold text-teal-700 mt-0.5">{euroPerKm.toFixed(3)}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </InfoCard>
   );
 }
 

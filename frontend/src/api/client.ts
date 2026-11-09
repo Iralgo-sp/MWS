@@ -1,4 +1,5 @@
 import type {
+  DashboardSummary,
   Installment,
   InsurancePolicy,
   MaintenanceRecord,
@@ -36,6 +37,9 @@ async function upload<T>(path: string, formData: FormData): Promise<T> {
 }
 
 export const api = {
+  dashboard: {
+    summary: () => request<DashboardSummary>("/dashboard/summary"),
+  },
   vehicles: {
     list: () => request<Vehicle[]>("/vehicles"),
     get: (id: string) => request<VehicleWithDetails>(`/vehicles/${id}`),
@@ -63,6 +67,10 @@ export const api = {
       }),
     update: (id: string, data: Record<string, unknown>) =>
       request<InsurancePolicy>(`/insurance/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    select: (id: string) =>
+      request<InsurancePolicy>(`/insurance/${id}/select`, { method: "PUT" }),
+    copyToNextYear: (id: string) =>
+      request<InsurancePolicy>(`/insurance/${id}/copy-year`, { method: "POST" }),
     remove: (id: string) => request<void>(`/insurance/${id}`, { method: "DELETE" }),
   },
   installments: {
@@ -71,9 +79,16 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    batchCreate: (vehicleId: string, installments: Record<string, unknown>[]) =>
+      request<Installment[]>(`/vehicles/${vehicleId}/installments/batch`, {
+        method: "POST",
+        body: JSON.stringify({ installments }),
+      }),
     update: (id: string, data: Record<string, unknown>) =>
       request<Installment>(`/installments/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/installments/${id}`, { method: "DELETE" }),
+    deleteAllCuotas: (vehicleId: string) =>
+      request<void>(`/vehicles/${vehicleId}/installments?conceptFilter=cuota`, { method: "DELETE" }),
   },
   odometer: {
     list: (vehicleId: string) =>

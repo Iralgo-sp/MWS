@@ -12,6 +12,8 @@ export interface Vehicle {
   model?: string | null;
   year?: number | null;
   plate?: string | null;
+  chassis?: string | null;
+  color?: string | null;
   purchaseDate?: string | null;
   purchasePrice?: number | null;
   notes?: string | null;
@@ -27,6 +29,8 @@ export interface Vehicle {
   financingInterestRate?: number | null;
   financingTermMonths?: number | null;
   financingNotes?: string | null;
+  nextItv?: string | null;
+  serviceIntervalKm?: number | null;
   _count?: {
     maintenanceRecords: number;
     insurancePolicies: number;
@@ -68,12 +72,17 @@ export interface MaintenanceRecord {
 export interface InsurancePolicy {
   id: string;
   vehicleId: string;
+  year: number;
+  status: string; // "presupuesto" | "activa" | "descartada"
+  isSelected: boolean;
   company: string;
   policyNumber: string;
   type: InsuranceType;
   startDate: string;
   endDate?: string | null;
   annualCost?: number | null;
+  hasFranchise: boolean;
+  franchiseAmount?: number | null;
   notes?: string | null;
   createdAt: string;
   documents: VehicleDocument[];
@@ -83,12 +92,34 @@ export interface Installment {
   id: string;
   vehicleId: string;
   paymentDate: string;
+  concept: string; // "entrada" | "pago_previo" | "pago_final" | "cuota" | "otro"
+  isPaid: boolean;
   installmentNumber?: number | null;
   principalAmount?: number | null;
   interestAmount?: number | null;
   totalAmount?: number | null;
+  remainingBalance?: number | null;
   notes?: string | null;
   createdAt: string;
+}
+
+export interface KmAlert {
+  id: string; alias: string; type: string;
+  currentKm: number; lastRevisionKm: number;
+  serviceIntervalKm: number; kmOverdue: number;
+}
+
+export interface DashboardSummary {
+  expiringPolicies: (InsurancePolicy & { vehicle: { id: string; alias: string; type: string } })[];
+  upcomingItv: { id: string; alias: string; type: string; nextItv: string }[];
+  kmAlerts: KmAlert[];
+  pendingThisMonth: (Installment & { vehicle: { id: string; alias: string; type: string } })[];
+  monthlyExpenses: {
+    maintenance: number;
+    insurance: number;
+    installments: number;
+    total: number;
+  };
 }
 
 export interface VehicleDocument {

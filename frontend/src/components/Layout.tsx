@@ -5,6 +5,8 @@ import { api } from "../api/client";
 import type { Vehicle } from "../api/types";
 import { VEHICLE_TYPE_ICONS } from "../constants";
 
+const isElectron = typeof window !== "undefined" && !!(window as Record<string, unknown>).electronAPI;
+
 export default function Layout({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const location = useLocation();
@@ -74,7 +76,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        <div className="p-3 border-t border-slate-800 mt-auto">
+        <div className="p-3 border-t border-slate-800 mt-auto space-y-2">
           <Link
             to="/vehicles/new"
             className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-md bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium transition-colors"
@@ -84,6 +86,17 @@ export default function Layout({ children }: { children: ReactNode }) {
             </svg>
             Añadir vehículo
           </Link>
+          {isElectron && (
+            <button
+              onClick={() => (window as Record<string, { quit: () => void }>).electronAPI.quit()}
+              className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-md border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-sm transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Salir
+            </button>
+          )}
         </div>
       </aside>
 

@@ -10,6 +10,7 @@ import insuranceRoutes from "./routes/insurance.js";
 import installmentRoutes from "./routes/installments.js";
 import documentRoutes from "./routes/documents.js";
 import odometerRoutes from "./routes/odometer.js";
+import dashboardRoutes from "./routes/dashboard.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -33,6 +34,7 @@ export async function startServer(options: ServerOptions = {}) {
   await app.register(installmentRoutes);
   await app.register(documentRoutes);
   await app.register(odometerRoutes);
+  await app.register(dashboardRoutes);
 
   app.get("/api/health", async () => ({ ok: true }));
 
