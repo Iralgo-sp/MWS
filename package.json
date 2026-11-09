@@ -1,0 +1,65 @@
+{
+  "name": "mws",
+  "version": "1.0.0",
+  "description": "Gestión de vehículos del hogar",
+  "main": "electron/dist/main.js",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n backend,frontend,electron -c cyan,green,yellow \"cd backend && npm run dev\" \"cd frontend && npm run dev\" \"npm run dev:electron\"",
+    "dev:electron": "wait-on tcp:5173 && cross-env NODE_ENV=development electron .",
+    "build": "npm run build:frontend && npm run build:backend && npm run build:electron",
+    "build:frontend": "cd frontend && npm run build",
+    "build:backend": "cd backend && npm run build",
+    "build:electron": "tsc -p electron/tsconfig.json",
+    "dist": "npm run build && electron-builder --win",
+    "dist:dir": "npm run build && electron-builder --win --dir"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "concurrently": "^9.1.0",
+    "cross-env": "^7.0.3",
+    "electron": "^33.4.11",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.6.3",
+    "wait-on": "^8.0.1"
+  },
+  "build": {
+    "appId": "com.mws.vehiculos",
+    "productName": "MWS Vehiculos",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "electron/dist/**",
+      "backend/dist/**",
+      "backend/node_modules/**",
+      "backend/prisma/schema.prisma",
+      "backend/prisma/migrations/**",
+      "!backend/node_modules/.cache/**",
+      "!**/.git/**"
+    ],
+    "extraResources": [
+      {
+        "from": "frontend/dist",
+        "to": "frontend-dist"
+      }
+    ],
+    "asarUnpack": [
+      "backend/node_modules/.prisma/**",
+      "backend/node_modules/@prisma/engines/**"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "MWS Vehiculos"
+    }
+  },
+  "allowScripts": {
+    "electron@33.4.11": true
+  }
+}

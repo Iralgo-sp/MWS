@@ -5,7 +5,7 @@ import path from "node:path";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "../prisma.js";
 
-const UPLOADS_ROOT = path.resolve("uploads");
+const UPLOADS_ROOT = process.env.UPLOADS_DIR ?? path.resolve("uploads");
 
 function vehicleUploadDir(vehicleId: string) {
   return path.join(UPLOADS_ROOT, vehicleId);
