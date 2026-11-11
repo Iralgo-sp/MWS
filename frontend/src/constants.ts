@@ -2,7 +2,7 @@ import type { InsuranceType, MaintenanceType, PaymentMethod, VehicleType } from 
 
 export const VEHICLE_TYPES: VehicleType[] = ["bici", "moto", "coche", "otro"];
 export const MAINTENANCE_TYPES: MaintenanceType[] = ["reparacion", "revision", "itv", "otro"];
-export const INSURANCE_TYPES: InsuranceType[] = ["terceros", "terceros_ampliado", "todo_riesgo", "otro"];
+export const INSURANCE_TYPES: InsuranceType[] = ["todo_riesgo_cf", "todo_riesgo_sf", "terceros", "ampliado", "irl"];
 export const PAYMENT_METHODS: PaymentMethod[] = ["contado", "financiado"];
 
 export const VEHICLE_TYPE_LABELS: Record<VehicleType, string> = {
@@ -27,10 +27,11 @@ export const MAINTENANCE_TYPE_LABELS: Record<MaintenanceType, string> = {
 };
 
 export const INSURANCE_TYPE_LABELS: Record<InsuranceType, string> = {
-  terceros: "A terceros",
-  terceros_ampliado: "A terceros ampliado",
-  todo_riesgo: "Todo riesgo",
-  otro: "Otro",
+  todo_riesgo_cf: "Todo riesgo c/f",
+  todo_riesgo_sf: "Todo riesgo s/f",
+  terceros: "Terceros",
+  ampliado: "Ampliado",
+  irl: "I.R.L.",
 };
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {

@@ -1,7 +1,7 @@
 export type VehicleType = "bici" | "moto" | "coche" | "otro";
 export type VehicleStatus = "activo" | "vendido";
 export type MaintenanceType = "reparacion" | "revision" | "itv" | "otro";
-export type InsuranceType = "terceros" | "terceros_ampliado" | "todo_riesgo" | "otro";
+export type InsuranceType = "todo_riesgo_cf" | "todo_riesgo_sf" | "terceros" | "ampliado" | "irl";
 export type PaymentMethod = "contado" | "financiado";
 
 export interface Vehicle {
@@ -31,6 +31,7 @@ export interface Vehicle {
   financingNotes?: string | null;
   nextItv?: string | null;
   serviceIntervalKm?: number | null;
+  coverImage?: string | null;
   _count?: {
     maintenanceRecords: number;
     insurancePolicies: number;

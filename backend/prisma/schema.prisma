@@ -42,6 +42,9 @@ model Vehicle {
   financingTermMonths   Int? // plazo en meses
   financingNotes        String?
 
+  // Foto de portada
+  coverImage        String?
+
   // Recordatorios proactivos
   nextItv           DateTime?
   serviceIntervalKm Int?

@@ -48,6 +48,13 @@ export const api = {
     update: (id: string, data: Record<string, unknown>) =>
       request<Vehicle>(`/vehicles/${id}`, { method: "PUT", body: JSON.stringify(data) }),
     remove: (id: string) => request<void>(`/vehicles/${id}`, { method: "DELETE" }),
+    uploadCover: (id: string, file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      return upload<{ coverImage: string }>(`/vehicles/${id}/cover`, formData);
+    },
+    removeCover: (id: string) => request<void>(`/vehicles/${id}/cover`, { method: "DELETE" }),
+    coverUrl: (id: string) => `${BASE}/vehicles/${id}/cover`,
   },
   maintenance: {
     create: (vehicleId: string, data: Record<string, unknown>) =>

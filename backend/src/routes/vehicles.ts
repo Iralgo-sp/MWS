@@ -1,8 +1,15 @@
 import path from "node:path";
-import { rm } from "node:fs/promises";
+import { createReadStream } from "node:fs";
+import { mkdir, rm, unlink, writeFile } from "node:fs/promises";
 import type { FastifyInstance } from "fastify";
 import { prisma } from "../prisma.js";
 import { VEHICLE_TYPES, VEHICLE_STATUSES, PAYMENT_METHODS } from "../types.js";
+
+const UPLOADS_ROOT = process.env.UPLOADS_DIR ?? path.resolve("uploads");
+const COVER_MIME_TYPES: Record<string, string> = {
+  ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+  ".png": "image/png", ".webp": "image/webp", ".gif": "image/gif",
+};
 
 interface VehicleBody {
   type: string;
@@ -151,6 +158,58 @@ export default async function vehicleRoutes(app: FastifyInstance) {
 
     await prisma.vehicle.delete({ where: { id } });
     await rm(path.resolve("uploads", id), { recursive: true, force: true });
+    return reply.code(204).send();
+  });
+
+  app.post("/api/vehicles/:id/cover", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const vehicle = await prisma.vehicle.findUnique({ where: { id } });
+    if (!vehicle) return reply.code(404).send({ error: "Vehículo no encontrado" });
+
+    let fileInfo: { filename: string; mimeType: string; buffer: Buffer } | undefined;
+    for await (const part of req.parts()) {
+      if (part.type === "file") {
+        const buffer = await part.toBuffer();
+        fileInfo = { filename: part.filename, mimeType: part.mimetype, buffer };
+      }
+    }
+    if (!fileInfo) return reply.code(400).send({ error: "Falta el fichero" });
+    if (!fileInfo.mimeType.startsWith("image/")) return reply.code(400).send({ error: "El fichero debe ser una imagen" });
+
+    if (vehicle.coverImage) {
+      await unlink(path.join(UPLOADS_ROOT, id, vehicle.coverImage)).catch(() => {});
+    }
+
+    const ext = path.extname(fileInfo.filename).toLowerCase() || ".jpg";
+    const coverFilename = `cover${ext}`;
+    const dir = path.join(UPLOADS_ROOT, id);
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, coverFilename), fileInfo.buffer);
+
+    const updated = await prisma.vehicle.update({ where: { id }, data: { coverImage: coverFilename } });
+    return { coverImage: updated.coverImage };
+  });
+
+  app.get("/api/vehicles/:id/cover", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const vehicle = await prisma.vehicle.findUnique({ where: { id }, select: { coverImage: true } });
+    if (!vehicle?.coverImage) return reply.code(404).send({ error: "Sin foto" });
+
+    const filePath = path.join(UPLOADS_ROOT, id, vehicle.coverImage);
+    const ext = path.extname(vehicle.coverImage).toLowerCase();
+    reply.type(COVER_MIME_TYPES[ext] ?? "image/jpeg");
+    return reply.send(createReadStream(filePath));
+  });
+
+  app.delete("/api/vehicles/:id/cover", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const vehicle = await prisma.vehicle.findUnique({ where: { id } });
+    if (!vehicle) return reply.code(404).send({ error: "Vehículo no encontrado" });
+
+    if (vehicle.coverImage) {
+      await unlink(path.join(UPLOADS_ROOT, id, vehicle.coverImage)).catch(() => {});
+      await prisma.vehicle.update({ where: { id }, data: { coverImage: null } });
+    }
     return reply.code(204).send();
   });
 }

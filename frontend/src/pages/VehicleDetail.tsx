@@ -30,6 +30,20 @@ export default function VehicleDetail() {
     load();
   }, [load]);
 
+  async function handleCoverUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    await api.vehicles.uploadCover(id, file);
+    load();
+    e.target.value = "";
+  }
+
+  async function handleCoverRemove() {
+    if (!id) return;
+    await api.vehicles.removeCover(id);
+    load();
+  }
+
   async function handleDelete() {
     if (!id || !vehicle) return;
     if (!confirm(`¿Eliminar "${vehicle.alias}" y todo su historial? Esta acción no se puede deshacer.`)) return;
@@ -57,7 +71,6 @@ export default function VehicleDetail() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </Link>
-        <span className="text-3xl leading-none">{VEHICLE_TYPE_ICONS[vehicle.type]}</span>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-semibold text-slate-900 truncate">{vehicle.alias}</h1>
           <p className="text-sm text-slate-500">
@@ -70,7 +83,7 @@ export default function VehicleDetail() {
             {vehicle.chassis ? ` · ${vehicle.chassis}` : ""}
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <span
             className={`text-xs px-2.5 py-1 rounded-full font-medium ${
               vehicle.status === "activo"
@@ -99,6 +112,36 @@ export default function VehicleDetail() {
       <div className="flex gap-6 items-start">
         {/* Left panel: vehicle info */}
         <aside className="w-80 shrink-0 space-y-4">
+          {/* Cover photo */}
+          <div className="relative group rounded-xl bg-slate-100 overflow-hidden border border-slate-200 shadow-sm" style={{ aspectRatio: "16/9" }}>
+            {vehicle.coverImage ? (
+              <img
+                src={`${api.vehicles.coverUrl(vehicle.id)}?t=${vehicle.updatedAt}`}
+                alt={vehicle.alias}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <span className="text-8xl opacity-10">{VEHICLE_TYPE_ICONS[vehicle.type]}</span>
+              </div>
+            )}
+            <label className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity" title="Cambiar foto">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-white text-xs font-medium">{vehicle.coverImage ? "Cambiar foto" : "Añadir foto"}</span>
+              <input type="file" accept="image/*" className="sr-only" onChange={handleCoverUpload} />
+            </label>
+            {vehicle.coverImage && (
+              <button
+                onClick={handleCoverRemove}
+                className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 rounded-full text-white text-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                title="Quitar foto"
+              >×</button>
+            )}
+          </div>
+
           <InfoCard title="Datos del vehículo">
             {vehicle.plate && <InfoField label="Matrícula" value={vehicle.plate} />}
             {vehicle.chassis && <InfoField label="Bastidor / VIN" value={vehicle.chassis} />}
@@ -120,9 +163,7 @@ export default function VehicleDetail() {
               value={vehicle.purchasePrice != null ? `${formatNumber(vehicle.purchasePrice)} €` : undefined}
             />
             <InfoField label="Forma de pago" value={PAYMENT_METHOD_LABELS[vehicle.paymentMethod]} />
-            {vehicle.dealerName && <InfoField label="Concesionario" value={vehicle.dealerName} />}
-            {vehicle.dealerAddress && <InfoField label="Dirección" value={vehicle.dealerAddress} />}
-            {vehicle.dealerAgent && <InfoField label="Agente" value={vehicle.dealerAgent} />}
+
             {vehicle.notes && <InfoField label="Notas" value={vehicle.notes} />}
           </InfoCard>
 

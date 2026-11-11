@@ -1,6 +1,6 @@
-import { app, BrowserWindow, ipcMain } from "electron";
+import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
-import { existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { pathToFileURL } from "node:url";
 
@@ -16,6 +16,22 @@ interface SqliteModule {
 const isDev = process.env.NODE_ENV === "development";
 const PORT = 3001;
 let win: BrowserWindow | null = null;
+
+interface AppSettings { dataDir?: string }
+
+function settingsPath() { return path.join(app.getPath("userData"), "app-settings.json"); }
+
+function readSettings(): AppSettings {
+  try { return JSON.parse(readFileSync(settingsPath(), "utf-8")); } catch { return {}; }
+}
+
+function writeSettings(s: AppSettings) {
+  writeFileSync(settingsPath(), JSON.stringify(s, null, 2), "utf-8");
+}
+
+function getDataDir(): string {
+  return readSettings().dataDir ?? app.getPath("userData");
+}
 
 /**
  * Initialize SQLite DB from Prisma migration files.
@@ -84,12 +100,11 @@ async function startBackend(): Promise<void> {
     }
   }
 
-  // ── Database in userData so it survives app updates ───────────────────────
-  const dbPath = path.join(userData, "mws.db");
+  // ── Data directory (default: userData, overridable via settings) ─────────
+  const dataDir = getDataDir();
+  const dbPath = path.join(dataDir, "mws.db");
   process.env.DATABASE_URL = `file:${dbPath}`;
-
-  // ── Uploads in userData ───────────────────────────────────────────────────
-  process.env.UPLOADS_DIR = path.join(userData, "uploads");
+  process.env.UPLOADS_DIR = path.join(dataDir, "uploads");
   process.env.PORT = String(PORT);
 
   // ── Initialize DB from migrations if first run ────────────────────────────
@@ -132,6 +147,23 @@ function createWindow(): void {
 }
 
 ipcMain.on("app:quit", () => app.quit());
+
+ipcMain.handle("app:getDataDir", () => getDataDir());
+
+ipcMain.handle("app:openDataDir", () => shell.openPath(getDataDir()));
+
+ipcMain.handle("app:changeDataDir", async () => {
+  const result = await dialog.showOpenDialog(win!, {
+    title: "Elegir carpeta de datos",
+    defaultPath: getDataDir(),
+    properties: ["openDirectory", "createDirectory"],
+  });
+  if (result.canceled || !result.filePaths[0]) return { canceled: true };
+  writeSettings({ dataDir: result.filePaths[0] });
+  app.relaunch();
+  app.exit(0);
+  return { canceled: false };
+});
 
 app.whenReady().then(async () => {
   if (!isDev) {

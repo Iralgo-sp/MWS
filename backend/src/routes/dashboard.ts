@@ -77,7 +77,7 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       }),
       prisma.insurancePolicy.aggregate({
         _sum: { annualCost: true },
-        where: { startDate: { gte: monthStart, lte: monthEnd } },
+        where: { startDate: { gte: monthStart, lte: monthEnd }, isSelected: true },
       }),
       prisma.installment.aggregate({
         _sum: { totalAmount: true },

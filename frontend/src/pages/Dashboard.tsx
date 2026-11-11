@@ -269,27 +269,38 @@ function ExpenseCell({ label, value, icon }: { label: string; value: number; ico
 function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
   return (
     <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:border-teal-300 hover:shadow-md transition-all overflow-hidden">
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <span className="text-3xl leading-none mt-0.5">{VEHICLE_TYPE_ICONS[v.type]}</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-slate-900 truncate">{v.alias}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium shrink-0 ${
-                v.status === "activo" ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-500"
-              }`}>
-                {v.status === "activo" ? "Activo" : "Vendido"}
-              </span>
-            </div>
-            <p className="text-sm text-slate-500 truncate">
-              {VEHICLE_TYPE_LABELS[v.type]}
-              {v.brand ? ` · ${v.brand}` : ""}
-              {v.model ? ` ${v.model}` : ""}
-              {v.year ? ` · ${v.year}` : ""}
-            </p>
+      {/* Photo */}
+      <div className="relative h-44 bg-slate-100 overflow-hidden">
+        {v.coverImage ? (
+          <img
+            src={`${api.vehicles.coverUrl(v.id)}?t=${v.updatedAt}`}
+            alt={v.alias}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <span className="text-8xl opacity-10">{VEHICLE_TYPE_ICONS[v.type]}</span>
           </div>
+        )}
+        <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium backdrop-blur-sm ${
+          v.status === "activo" ? "bg-teal-500/90 text-white" : "bg-slate-600/80 text-white"
+        }`}>
+          {v.status === "activo" ? "Activo" : "Vendido"}
+        </span>
+      </div>
+
+      {/* Info */}
+      <div className="p-4">
+        <div className="mb-3">
+          <h3 className="font-semibold text-slate-900 text-base">{v.alias}</h3>
+          <p className="text-sm text-slate-500 truncate">
+            {VEHICLE_TYPE_LABELS[v.type]}
+            {v.brand ? ` · ${v.brand}` : ""}
+            {v.model ? ` ${v.model}` : ""}
+            {v.year ? ` · ${v.year}` : ""}
+          </p>
         </div>
-        <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
           {v.plate && <InfoRow label="Matrícula" value={v.plate} />}
           {v.chassis && <InfoRow label="Bastidor" value={v.chassis} />}
           {v.color && <InfoRow label="Color" value={v.color} />}
@@ -304,6 +315,8 @@ function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
           <InfoRow label="Pago" value={PAYMENT_METHOD_LABELS[v.paymentMethod]} />
         </dl>
       </div>
+
+      {/* Actions */}
       <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
         <Link to={`/vehicles/${v.id}`}
           className="flex-1 text-center py-1.5 rounded-md bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium transition-colors">
