@@ -172,10 +172,6 @@ export default function VehicleDetail() {
                   : undefined
               }
             />
-            <InfoField
-              label="Precio de compra"
-              value={vehicle.purchasePrice != null ? `${formatNumber(vehicle.purchasePrice)} €` : undefined}
-            />
             <InfoField label="Forma de pago" value={PAYMENT_METHOD_LABELS[vehicle.paymentMethod]} />
 
             {vehicle.notes && <InfoField label="Notas" value={vehicle.notes} />}
@@ -294,13 +290,18 @@ function TcoPanel({ vehicle }: { vehicle: VehicleWithDetails }) {
 
   return (
     <InfoCard title="Coste total (TCO)">
-      <InfoField label="Precio de compra" value={`${formatNumber(purchasePrice)} €`} />
       {totalMaintenance > 0 && <InfoField label="Mantenimiento" value={`${formatNumber(totalMaintenance)} €`} />}
       {totalInsurance > 0 && <InfoField label="Seguros" value={`${formatNumber(totalInsurance)} €`} />}
       {totalInterest > 0 && <InfoField label="Intereses financiación" value={`${formatNumber(totalInterest)} €`} />}
-      <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100">
-        <dt className="text-xs text-slate-400">Total acumulado</dt>
-        <dd className="text-sm font-semibold text-slate-900 mt-0.5">{formatNumber(tcoTotal)} €</dd>
+      <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100 bg-slate-50">
+        <div className="px-4 py-2.5">
+          <dt className="text-xs text-slate-400">Precio de compra</dt>
+          <dd className="text-sm font-medium text-slate-700 mt-0.5">{formatNumber(purchasePrice)} €</dd>
+        </div>
+        <div className="px-4 py-2.5">
+          <dt className="text-xs text-slate-400">Total acumulado</dt>
+          <dd className="text-sm font-semibold text-slate-900 mt-0.5">{formatNumber(tcoTotal)} €</dd>
+        </div>
       </div>
       {(euroPerMonth != null || euroPerKm != null) && (
         <div className="grid grid-cols-2 divide-x divide-slate-100 border-t border-slate-100">
