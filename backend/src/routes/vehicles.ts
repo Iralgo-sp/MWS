@@ -85,8 +85,12 @@ export default async function vehicleRoutes(app: FastifyInstance) {
         },
         installments: { orderBy: { paymentDate: "desc" } },
         odometerReadings: { orderBy: { date: "desc" } },
+        acquisitionOffers: {
+          orderBy: { offerDate: "desc" },
+          include: { documents: { orderBy: { uploadedAt: "desc" } } },
+        },
         documents: {
-          where: { maintenanceRecordId: null, insurancePolicyId: null },
+          where: { maintenanceRecordId: null, insurancePolicyId: null, acquisitionOfferId: null },
           orderBy: { uploadedAt: "desc" },
         },
       },

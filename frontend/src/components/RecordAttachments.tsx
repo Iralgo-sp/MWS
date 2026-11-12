@@ -1,6 +1,7 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import { api } from "../api/client";
 import type { VehicleDocument } from "../api/types";
+import { useConfirm } from "./ConfirmDialog";
 
 export default function RecordAttachments({
   documents,
@@ -16,6 +17,7 @@ export default function RecordAttachments({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const confirmDialog = useConfirm();
 
   async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -34,7 +36,8 @@ export default function RecordAttachments({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este documento?")) return;
+    const ok = await confirmDialog({ message: "¿Eliminar este documento?", confirmLabel: "Eliminar" });
+    if (!ok) return;
     setError(null);
     try {
       await api.documents.remove(id);

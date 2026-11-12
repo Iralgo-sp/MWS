@@ -15,7 +15,7 @@ async function handleUpload(
   req: FastifyRequest,
   reply: FastifyReply,
   vehicleId: string,
-  extra: { maintenanceRecordId?: string; insurancePolicyId?: string },
+  extra: { maintenanceRecordId?: string; insurancePolicyId?: string; acquisitionOfferId?: string },
 ) {
   let label: string | undefined;
   let fileInfo: { filename: string; mimeType: string; buffer: Buffer } | undefined;
@@ -43,6 +43,7 @@ async function handleUpload(
       vehicleId,
       maintenanceRecordId: extra.maintenanceRecordId,
       insurancePolicyId: extra.insurancePolicyId,
+      acquisitionOfferId: extra.acquisitionOfferId,
       label: label.trim(),
       originalName: fileInfo.filename,
       storedFilename,
@@ -76,6 +77,14 @@ export default async function documentRoutes(app: FastifyInstance) {
     if (!policy) return reply.code(404).send({ error: "Póliza no encontrada" });
 
     return handleUpload(req, reply, policy.vehicleId, { insurancePolicyId: id });
+  });
+
+  app.post("/api/acquisition-offers/:id/documents", async (req, reply) => {
+    const { id } = req.params as { id: string };
+    const offer = await prisma.acquisitionOffer.findUnique({ where: { id } });
+    if (!offer) return reply.code(404).send({ error: "Oferta no encontrada" });
+
+    return handleUpload(req, reply, offer.vehicleId, { acquisitionOfferId: id });
   });
 
   app.get("/api/documents/:id/download", async (req, reply) => {

@@ -54,6 +54,35 @@ model Vehicle {
   installments       Installment[]
   documents          Document[]
   odometerReadings   OdometerReading[]
+  acquisitionOffers  AcquisitionOffer[]
+}
+
+model AcquisitionOffer {
+  id        String   @id @default(cuid())
+  vehicleId String
+  vehicle   Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  sellerType    String   @default("concesionario") // concesionario | particular
+  sellerName    String
+  sellerPhone   String?
+  sellerAddress String?
+  offerDate     DateTime
+
+  status     String  @default("en_estudio") // en_estudio | descartada | aceptada
+  isSelected Boolean @default(false)
+
+  listPrice       Float? // precio de lista / anunciado
+  negotiatedPrice Float? // precio negociado final
+  tradeInValue    Float? // valor de tasación por entrega de vehículo usado
+  taxesFees       Float? // impuestos + gestoría + matriculación
+
+  warrantyMonths Int?
+  includedExtras String? // extras incluidos en la oferta
+  notes          String?
+
+  createdAt DateTime @default(now())
+
+  documents Document[]
 }
 
 model MaintenanceRecord {
@@ -124,6 +153,8 @@ model Document {
   maintenanceRecord   MaintenanceRecord? @relation(fields: [maintenanceRecordId], references: [id], onDelete: Cascade)
   insurancePolicyId   String?
   insurancePolicy     InsurancePolicy?   @relation(fields: [insurancePolicyId], references: [id], onDelete: Cascade)
+  acquisitionOfferId  String?
+  acquisitionOffer    AcquisitionOffer?  @relation(fields: [acquisitionOfferId], references: [id], onDelete: Cascade)
   label               String // p.ej. "Factura de compra", "Contrato de financiación"
   originalName        String
   storedFilename      String // nombre físico en disco, evita colisiones

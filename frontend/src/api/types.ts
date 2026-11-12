@@ -3,6 +3,8 @@ export type VehicleStatus = "activo" | "vendido";
 export type MaintenanceType = "reparacion" | "revision" | "itv" | "otro";
 export type InsuranceType = "todo_riesgo_cf" | "todo_riesgo_sf" | "terceros" | "ampliado" | "irl";
 export type PaymentMethod = "contado" | "financiado";
+export type AcquisitionSellerType = "concesionario" | "particular";
+export type AcquisitionStatus = "en_estudio" | "descartada" | "aceptada";
 
 export interface Vehicle {
   id: string;
@@ -55,6 +57,28 @@ export interface VehicleWithDetails extends Vehicle {
   installments: Installment[];
   documents: VehicleDocument[];
   odometerReadings: OdometerReading[];
+  acquisitionOffers: AcquisitionOffer[];
+}
+
+export interface AcquisitionOffer {
+  id: string;
+  vehicleId: string;
+  sellerType: AcquisitionSellerType;
+  sellerName: string;
+  sellerPhone?: string | null;
+  sellerAddress?: string | null;
+  offerDate: string;
+  status: AcquisitionStatus;
+  isSelected: boolean;
+  listPrice?: number | null;
+  negotiatedPrice?: number | null;
+  tradeInValue?: number | null;
+  taxesFees?: number | null;
+  warrantyMonths?: number | null;
+  includedExtras?: string | null;
+  notes?: string | null;
+  createdAt: string;
+  documents: VehicleDocument[];
 }
 
 export interface MaintenanceRecord {

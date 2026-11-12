@@ -1,5 +1,6 @@
 import { useRef, useState, type FormEvent } from "react";
 import { api } from "../api/client";
+import { useConfirm } from "./ConfirmDialog";
 import type { VehicleDocument } from "../api/types";
 import { inputClass } from "../constants";
 
@@ -31,6 +32,7 @@ export default function DocumentsSection({
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const confirmDialog = useConfirm();
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -59,7 +61,7 @@ export default function DocumentsSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este documento?")) return;
+    if (!(await confirmDialog({ message: "¿Eliminar este documento?", confirmLabel: "Eliminar" }))) return;
     await api.documents.remove(id);
     onChange();
   }

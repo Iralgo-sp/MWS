@@ -1,4 +1,5 @@
 import type {
+  AcquisitionOffer,
   DashboardSummary,
   Installment,
   InsurancePolicy,
@@ -80,6 +81,18 @@ export const api = {
       request<InsurancePolicy>(`/insurance/${id}/copy-year`, { method: "POST" }),
     remove: (id: string) => request<void>(`/insurance/${id}`, { method: "DELETE" }),
   },
+  acquisitionOffers: {
+    create: (vehicleId: string, data: Record<string, unknown>) =>
+      request<AcquisitionOffer>(`/vehicles/${vehicleId}/acquisition-offers`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    update: (id: string, data: Record<string, unknown>) =>
+      request<AcquisitionOffer>(`/acquisition-offers/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    select: (id: string) =>
+      request<AcquisitionOffer>(`/acquisition-offers/${id}/select`, { method: "PUT" }),
+    remove: (id: string) => request<void>(`/acquisition-offers/${id}`, { method: "DELETE" }),
+  },
   installments: {
     create: (vehicleId: string, data: Record<string, unknown>) =>
       request<Installment>(`/vehicles/${vehicleId}/installments`, {
@@ -127,6 +140,12 @@ export const api = {
       formData.append("label", label);
       formData.append("file", file);
       return upload<VehicleDocument>(`/insurance/${policyId}/documents`, formData);
+    },
+    uploadToAcquisitionOffer: (offerId: string, file: File, label: string) => {
+      const formData = new FormData();
+      formData.append("label", label);
+      formData.append("file", file);
+      return upload<VehicleDocument>(`/acquisition-offers/${offerId}/documents`, formData);
     },
     remove: (id: string) => request<void>(`/documents/${id}`, { method: "DELETE" }),
     downloadUrl: (id: string) => `${BASE}/documents/${id}/download`,

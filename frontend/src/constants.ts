@@ -1,4 +1,11 @@
-import type { InsuranceType, MaintenanceType, PaymentMethod, VehicleType } from "./api/types";
+import type {
+  AcquisitionSellerType,
+  AcquisitionStatus,
+  InsuranceType,
+  MaintenanceType,
+  PaymentMethod,
+  VehicleType,
+} from "./api/types";
 
 export const VEHICLE_TYPES: VehicleType[] = ["bici", "moto", "coche", "otro"];
 export const MAINTENANCE_TYPES: MaintenanceType[] = ["reparacion", "revision", "itv", "otro"];
@@ -55,6 +62,19 @@ export const INSURANCE_STATUS_LABELS: Record<InsuranceStatus, string> = {
   presupuesto: "Presupuesto",
   activa: "Activa",
   descartada: "Descartada",
+};
+
+export const ACQUISITION_SELLER_TYPES: AcquisitionSellerType[] = ["concesionario", "particular"];
+export const ACQUISITION_SELLER_TYPE_LABELS: Record<AcquisitionSellerType, string> = {
+  concesionario: "Concesionario",
+  particular: "Particular",
+};
+
+export const ACQUISITION_STATUSES: AcquisitionStatus[] = ["en_estudio", "descartada", "aceptada"];
+export const ACQUISITION_STATUS_LABELS: Record<AcquisitionStatus, string> = {
+  en_estudio: "En estudio",
+  descartada: "Descartada",
+  aceptada: "Aceptada",
 };
 
 export function formatNumber(n: number): string {

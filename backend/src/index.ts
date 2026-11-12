@@ -7,6 +7,7 @@ import multipart from "@fastify/multipart";
 import vehicleRoutes from "./routes/vehicles.js";
 import maintenanceRoutes from "./routes/maintenance.js";
 import insuranceRoutes from "./routes/insurance.js";
+import acquisitionRoutes from "./routes/acquisition.js";
 import installmentRoutes from "./routes/installments.js";
 import documentRoutes from "./routes/documents.js";
 import odometerRoutes from "./routes/odometer.js";
@@ -31,6 +32,7 @@ export async function startServer(options: ServerOptions = {}) {
   await app.register(vehicleRoutes);
   await app.register(maintenanceRoutes);
   await app.register(insuranceRoutes);
+  await app.register(acquisitionRoutes);
   await app.register(installmentRoutes);
   await app.register(documentRoutes);
   await app.register(odometerRoutes);

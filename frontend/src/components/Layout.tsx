@@ -17,7 +17,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex h-full">
-      <aside className="w-60 shrink-0 bg-slate-900 flex flex-col overflow-y-auto">
+      <aside className="no-print w-60 shrink-0 bg-slate-900 flex flex-col overflow-y-auto">
         <div className="px-4 py-5 border-b border-slate-800">
           <Link to="/" className="text-teal-400 font-bold text-xl tracking-wide hover:text-teal-300 transition-colors">
             MWS

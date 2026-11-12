@@ -3,11 +3,13 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { MaintenanceType, VehicleWithDetails } from "../api/types";
 import { MAINTENANCE_TYPE_LABELS, MAINTENANCE_TYPES, inputClass } from "../constants";
+import { useConfirm } from "../components/ConfirmDialog";
 import RecordAttachments from "../components/RecordAttachments";
 
 export default function MaintenanceRecordPage() {
   const { id, recordId } = useParams<{ id: string; recordId: string }>();
   const navigate = useNavigate();
+  const confirmDialog = useConfirm();
   const [vehicle, setVehicle] = useState<VehicleWithDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState({
@@ -66,7 +68,8 @@ export default function MaintenanceRecordPage() {
 
   async function handleDelete() {
     if (!recordId || !id) return;
-    if (!confirm("¿Eliminar este registro y su factura adjunta?")) return;
+    const ok = await confirmDialog({ message: "¿Eliminar este registro y su factura adjunta?", confirmLabel: "Eliminar" });
+    if (!ok) return;
     await api.maintenance.remove(recordId);
     navigate(`/vehicles/${id}`);
   }

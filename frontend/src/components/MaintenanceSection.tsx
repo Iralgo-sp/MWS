@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { MaintenanceRecord, MaintenanceType } from "../api/types";
 import { MAINTENANCE_TYPE_LABELS, MAINTENANCE_TYPES, formatNumber, inputClass } from "../constants";
+import { useConfirm } from "./ConfirmDialog";
 import RecordAttachments from "./RecordAttachments";
 
 const emptyForm = {
@@ -130,6 +131,7 @@ export default function MaintenanceSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<RecordForm>(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const confirmDialog = useConfirm();
 
   const totalCost = records.reduce((sum, r) => sum + (r.cost ?? 0), 0);
 
@@ -178,7 +180,8 @@ export default function MaintenanceSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este registro de mantenimiento?")) return;
+    const ok = await confirmDialog({ message: "¿Eliminar este registro de mantenimiento?", confirmLabel: "Eliminar" });
+    if (!ok) return;
     await api.maintenance.remove(id);
     onChange();
   }

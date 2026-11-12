@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { api } from "../api/client";
 import type { OdometerReading } from "../api/types";
 import { formatNumber, inputClass } from "../constants";
+import { useConfirm } from "./ConfirmDialog";
 
 const emptyForm = {
   date: "",
@@ -103,6 +104,7 @@ export default function OdometerSection({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<OdometerForm>(emptyForm);
   const [error, setError] = useState<string | null>(null);
+  const confirmDialog = useConfirm();
 
   // readings is ordered by date desc — oldest is last
   const latestReading = readings[0];
@@ -152,7 +154,8 @@ export default function OdometerSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar esta lectura del odómetro?")) return;
+    const ok = await confirmDialog({ message: "¿Eliminar esta lectura del odómetro?", confirmLabel: "Eliminar" });
+    if (!ok) return;
     await api.odometer.remove(id);
     onChange();
   }

@@ -36,3 +36,17 @@ textarea,
 button {
   color-scheme: light;
 }
+
+/* Printable pages (e.g. VehicleExport) opt out of the app's fixed-height shell */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  html,
+  body,
+  #root,
+  main {
+    height: auto !important;
+    overflow: visible !important;
+  }
+}

@@ -3,17 +3,20 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { VehicleWithDetails } from "../api/types";
 import { formatNumber, PAYMENT_METHOD_LABELS, VEHICLE_TYPE_ICONS, VEHICLE_TYPE_LABELS } from "../constants";
+import AcquisitionSection from "../components/AcquisitionSection";
+import { useConfirm } from "../components/ConfirmDialog";
 import MaintenanceSection from "../components/MaintenanceSection";
 import InsuranceSection from "../components/InsuranceSection";
 import InstallmentsSection from "../components/InstallmentsSection";
 import OdometerSection from "../components/OdometerSection";
 import DocumentsSection from "../components/DocumentsSection";
 
-type TabId = "mantenimiento" | "seguros" | "pagos" | "kilometraje" | "documentos";
+type TabId = "adquisicion" | "mantenimiento" | "seguros" | "pagos" | "kilometraje" | "documentos";
 
 export default function VehicleDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const confirmDialog = useConfirm();
   const [vehicle, setVehicle] = useState<VehicleWithDetails | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<TabId>("mantenimiento");
@@ -46,7 +49,11 @@ export default function VehicleDetail() {
 
   async function handleDelete() {
     if (!id || !vehicle) return;
-    if (!confirm(`¿Eliminar "${vehicle.alias}" y todo su historial? Esta acción no se puede deshacer.`)) return;
+    const ok = await confirmDialog({
+      message: `¿Eliminar "${vehicle.alias}" y todo su historial? Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar vehículo",
+    });
+    if (!ok) return;
     await api.vehicles.remove(id);
     navigate("/");
   }
@@ -55,6 +62,7 @@ export default function VehicleDetail() {
   if (!vehicle) return <p className="p-6 text-slate-500">Cargando…</p>;
 
   const tabs: { id: TabId; label: string }[] = [
+    { id: "adquisicion", label: "Adquisición" },
     { id: "mantenimiento", label: "Mantenimiento" },
     { id: "seguros", label: "Seguros" },
     { id: "pagos", label: "Pagos" },
@@ -93,6 +101,12 @@ export default function VehicleDetail() {
           >
             {vehicle.status === "activo" ? "Activo" : "Vendido"}
           </span>
+          <Link
+            to={`/vehicles/${vehicle.id}/export`}
+            className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm transition-colors"
+          >
+            Exportar expediente
+          </Link>
           <Link
             to={`/vehicles/${vehicle.id}/edit`}
             className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm transition-colors"
@@ -214,6 +228,9 @@ export default function VehicleDetail() {
 
           {/* Tab content */}
           <div>
+            {tab === "adquisicion" && (
+              <AcquisitionSection vehicleId={vehicle.id} offers={vehicle.acquisitionOffers} onChange={load} />
+            )}
             {tab === "mantenimiento" && (
               <MaintenanceSection vehicleId={vehicle.id} records={vehicle.maintenanceRecords} onChange={load} />
             )}
@@ -227,6 +244,7 @@ export default function VehicleDetail() {
                 onChange={load}
                 paymentMethod={vehicle.paymentMethod}
                 purchasePrice={vehicle.purchasePrice ?? undefined}
+                purchaseDate={vehicle.purchaseDate ?? undefined}
                 financingAmount={vehicle.financingAmount ?? undefined}
                 financingInterestRate={vehicle.financingInterestRate ?? undefined}
                 financingTermMonths={vehicle.financingTermMonths ?? undefined}

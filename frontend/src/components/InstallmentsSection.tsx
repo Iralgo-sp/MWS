@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { api } from "../api/client";
+import { useConfirm } from "./ConfirmDialog";
 import type { Installment } from "../api/types";
 import {
   PAYMENT_CONCEPTS,
@@ -37,13 +38,18 @@ interface AmortRow {
   principalAmount: number;
   interestAmount: number;
   remainingBalance: number;
+  concept: "cuota" | "pago_final";
 }
 
+// `balloon` > 0 models a VFG/PCP-style loan: the regular cuotas only amortize the
+// principal down to the balloon (not to 0), and a separate final lump-sum payment
+// (concept "pago_final") settles the rest one month after the last cuota.
 function computeAmortization(
   principal: number,
   annualRatePct: number,
   months: number,
-  firstPaymentDate: string
+  firstPaymentDate: string,
+  balloon = 0
 ): AmortRow[] {
   const r = annualRatePct / 100 / 12;
   const first = new Date(firstPaymentDate);
@@ -52,13 +58,13 @@ function computeAmortization(
 
   const monthlyPayment =
     r === 0
-      ? principal / months
-      : (principal * r) / (1 - Math.pow(1 + r, -months));
+      ? (principal - balloon) / months
+      : ((principal - balloon / Math.pow(1 + r, months)) * r) / (1 - Math.pow(1 + r, -months));
 
   for (let i = 1; i <= months; i++) {
     const interest = balance * r;
     const principalPart = monthlyPayment - interest;
-    balance = Math.max(0, balance - principalPart);
+    balance = i === months ? balloon : balance - principalPart;
     rows.push({
       installmentNumber: i,
       paymentDate: toDateString(addMonths(first, i - 1)),
@@ -66,8 +72,22 @@ function computeAmortization(
       principalAmount: Math.round(principalPart * 100) / 100,
       interestAmount: Math.round(interest * 100) / 100,
       remainingBalance: Math.round(balance * 100) / 100,
+      concept: "cuota",
     });
   }
+
+  if (balloon > 0) {
+    rows.push({
+      installmentNumber: months + 1,
+      paymentDate: toDateString(addMonths(first, months)),
+      totalAmount: Math.round(balloon * 100) / 100,
+      principalAmount: Math.round(balloon * 100) / 100,
+      interestAmount: 0,
+      remainingBalance: 0,
+      concept: "pago_final",
+    });
+  }
+
   return rows;
 }
 
@@ -138,6 +158,7 @@ export default function InstallmentsSection({
   onChange,
   paymentMethod,
   purchasePrice,
+  purchaseDate,
   financingAmount,
   financingInterestRate,
   financingTermMonths,
@@ -147,6 +168,7 @@ export default function InstallmentsSection({
   onChange: () => void;
   paymentMethod: string;
   purchasePrice?: number;
+  purchaseDate?: string;
   financingAmount?: number;
   financingInterestRate?: number;
   financingTermMonths?: number;
@@ -156,22 +178,42 @@ export default function InstallmentsSection({
   );
   const [showAddForm, setShowAddForm] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const confirmDialog = useConfirm();
 
   // Amortization generator state
   const [genPrincipal, setGenPrincipal] = useState(financingAmount != null ? formatNumber(financingAmount) : "");
   const [genRate, setGenRate] = useState(financingInterestRate?.toString() ?? "");
   const [genMonths, setGenMonths] = useState(financingTermMonths?.toString() ?? "");
   const [genFirstDate, setGenFirstDate] = useState("");
+  const [genBalloon, setGenBalloon] = useState("");
   const [genPreview, setGenPreview] = useState<AmortRow[] | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+
+  // Default the first-payment date from the "entrada" payment, or failing that the
+  // purchase date, so "⚡ Generar tabla" works without the user typing a date first.
+  useEffect(() => {
+    if (genFirstDate) return;
+    const entrada = installments.find((i) => i.concept === "entrada");
+    const fallback = entrada?.paymentDate ?? purchaseDate;
+    if (fallback) setGenFirstDate(fallback.slice(0, 10));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [installments, purchaseDate]);
 
   // Inline date editing for cuota rows
   const [editingDateId, setEditingDateId] = useState<string | null>(null);
   const [editDateValue, setEditDateValue] = useState("");
 
   const cuotas = installments.filter((i) => i.concept === "cuota");
-  const extraPayments = installments.filter((i) => i.concept !== "cuota");
+  // A generated balloon/VFG payment carries installmentNumber (months+1); a manually
+  // added "pago_final" entry never does, so it still belongs in extraPayments below.
+  const generatedFinalPayment = installments.find(
+    (i) => i.concept === "pago_final" && i.installmentNumber != null
+  );
+  const scheduleRows = generatedFinalPayment ? [...cuotas, generatedFinalPayment] : cuotas;
+  const extraPayments = installments.filter(
+    (i) => i.concept !== "cuota" && i.id !== generatedFinalPayment?.id
+  );
   const totalPaid = installments.filter((i) => i.isPaid).reduce((s, i) => s + (i.totalAmount ?? 0), 0);
   const totalScheduledPending = installments.filter((i) => !i.isPaid).reduce((s, i) => s + (i.totalAmount ?? 0), 0);
   const remainingDebt = purchasePrice != null ? Math.max(0, purchasePrice - totalPaid) : null;
@@ -198,11 +240,14 @@ export default function InstallmentsSection({
     const p = parseSpanish(genPrincipal);
     const r = parseSpanish(genRate);
     const n = Number(genMonths);
+    const balloon = genBalloon ? parseSpanish(genBalloon) : 0;
     if (!p || p <= 0) return setGenError("Indica el importe financiado");
     if (r < 0) return setGenError("El interés no puede ser negativo");
     if (!n || n <= 0 || !Number.isInteger(n)) return setGenError("El plazo debe ser un número entero de meses");
     if (!genFirstDate) return setGenError("Indica la fecha del primer pago");
-    setGenPreview(computeAmortization(p, r, n, genFirstDate));
+    if (balloon < 0) return setGenError("La cuota final no puede ser negativa");
+    if (balloon >= p) return setGenError("La cuota final debe ser menor que el importe financiado");
+    setGenPreview(computeAmortization(p, r, n, genFirstDate, balloon));
   }
 
   async function confirmGenerate() {
@@ -210,19 +255,25 @@ export default function InstallmentsSection({
     setGenerating(true);
     setGenError(null);
     try {
-      // Remove existing cuotas first
-      if (cuotas.length > 0) {
-        if (!confirm(`Se eliminarán las ${cuotas.length} cuotas existentes y se generará la nueva tabla. ¿Continuar?`)) {
+      // Remove any previously generated schedule first (regular cuotas + its balloon, if any)
+      const existingCount = cuotas.length + (generatedFinalPayment ? 1 : 0);
+      if (existingCount > 0) {
+        const ok = await confirmDialog({
+          message: `Se eliminarán las ${existingCount} cuotas existentes y se generará la nueva tabla. ¿Continuar?`,
+          confirmLabel: "Regenerar",
+        });
+        if (!ok) {
           setGenerating(false);
           return;
         }
         await api.installments.deleteAllCuotas(vehicleId);
+        if (generatedFinalPayment) await api.installments.remove(generatedFinalPayment.id);
       }
       await api.installments.batchCreate(
         vehicleId,
         genPreview.map((r) => ({
           paymentDate: r.paymentDate,
-          concept: "cuota",
+          concept: r.concept,
           installmentNumber: r.installmentNumber,
           principalAmount: r.principalAmount,
           interestAmount: r.interestAmount,
@@ -253,14 +304,20 @@ export default function InstallmentsSection({
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("¿Eliminar este pago?")) return;
+    if (!(await confirmDialog({ message: "¿Eliminar este pago?", confirmLabel: "Eliminar" }))) return;
     await api.installments.remove(id);
     onChange();
   }
 
   async function handleDeleteAllCuotas() {
-    if (!confirm(`¿Eliminar las ${cuotas.length} cuotas generadas? Esta acción no se puede deshacer.`)) return;
+    const total = cuotas.length + (generatedFinalPayment ? 1 : 0);
+    const ok = await confirmDialog({
+      message: `¿Eliminar las ${total} cuotas generadas? Esta acción no se puede deshacer.`,
+      confirmLabel: "Eliminar tabla",
+    });
+    if (!ok) return;
     await api.installments.deleteAllCuotas(vehicleId);
+    if (generatedFinalPayment) await api.installments.remove(generatedFinalPayment.id);
     onChange();
   }
 
@@ -374,9 +431,11 @@ export default function InstallmentsSection({
           <div className="rounded-xl border border-slate-200 overflow-hidden">
             <div className="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
               <h3 className="text-sm font-semibold text-slate-700">Tabla de amortización</h3>
-              {cuotas.length > 0 && (
+              {(cuotas.length > 0 || generatedFinalPayment) && (
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-slate-500">{cuotas.length} cuotas generadas</span>
+                  <span className="text-xs text-slate-500">
+                    {cuotas.length} cuotas{generatedFinalPayment ? " + cuota final" : ""} generadas
+                  </span>
                   <button
                     onClick={handleDeleteAllCuotas}
                     className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
@@ -410,6 +469,19 @@ export default function InstallmentsSection({
                     value={genFirstDate} onChange={(e) => { setGenFirstDate(e.target.value); setGenPreview(null); }} />
                 </div>
               </div>
+              <div className="grid grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Cuota final / VFG (€, opcional)</label>
+                  <input type="text" inputMode="decimal" placeholder="Sin cuota final" className={inputClass}
+                    value={genBalloon} onChange={(e) => { setGenBalloon(e.target.value); setGenPreview(null); }} />
+                </div>
+              </div>
+              {genBalloon && !genError && (
+                <p className="text-xs text-slate-500 -mt-2">
+                  Financiación tipo PCP/VFG: las cuotas solo amortizan hasta la cuota final, que se paga aparte al
+                  terminar el plazo (opción de compra, devolución o refinanciación).
+                </p>
+              )}
               {genError && <p className="text-sm text-red-600">{genError}</p>}
               <div className="flex gap-2">
                 <button onClick={previewAmortization}
@@ -440,8 +512,13 @@ export default function InstallmentsSection({
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {genPreview.map((row) => (
-                        <tr key={row.installmentNumber} className="bg-white">
-                          <td className="px-3 py-1.5 text-slate-500">{row.installmentNumber}</td>
+                        <tr
+                          key={row.installmentNumber}
+                          className={row.concept === "pago_final" ? "bg-amber-50 font-semibold" : "bg-white"}
+                        >
+                          <td className="px-3 py-1.5 text-slate-500">
+                            {row.concept === "pago_final" ? "Final" : row.installmentNumber}
+                          </td>
                           <td className="px-3 py-1.5">{fmtDate(row.paymentDate)}</td>
                           <td className="px-3 py-1.5 text-right tabular-nums">{formatNumber(row.totalAmount)}</td>
                           <td className="px-3 py-1.5 text-right tabular-nums text-slate-500">{formatNumber(row.principalAmount)}</td>
@@ -455,7 +532,7 @@ export default function InstallmentsSection({
               )}
 
               {/* Saved cuotas table */}
-              {!genPreview && cuotas.length > 0 && (
+              {!genPreview && scheduleRows.length > 0 && (
                 <div className="overflow-auto max-h-72 rounded-lg border border-slate-200">
                   <table className="w-full text-xs">
                     <thead className="bg-slate-50 text-slate-500 text-left">
@@ -471,8 +548,15 @@ export default function InstallmentsSection({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {cuotas.map((i) => (
-                        <tr key={i.id} className={i.isPaid ? "bg-teal-50" : "bg-white"}>
+                      {scheduleRows.map((i) => (
+                        <tr
+                          key={i.id}
+                          className={
+                            i.concept === "pago_final"
+                              ? i.isPaid ? "bg-teal-50 font-semibold" : "bg-amber-50 font-semibold"
+                              : i.isPaid ? "bg-teal-50" : "bg-white"
+                          }
+                        >
                           <td className="px-3 py-1.5 text-center">
                             <input
                               type="checkbox"
@@ -481,7 +565,9 @@ export default function InstallmentsSection({
                               className="accent-teal-600 cursor-pointer"
                             />
                           </td>
-                          <td className="px-3 py-1.5 text-slate-500">{i.installmentNumber ?? "—"}</td>
+                          <td className="px-3 py-1.5 text-slate-500">
+                            {i.concept === "pago_final" ? "Final" : i.installmentNumber ?? "—"}
+                          </td>
                           <td className="px-3 py-1.5">
                             {editingDateId === i.id ? (
                               <div className="flex items-center gap-1">
@@ -521,16 +607,16 @@ export default function InstallmentsSection({
                     <tfoot className="bg-slate-50 font-medium text-slate-700">
                       <tr>
                         <td colSpan={3} className="px-3 py-2 text-xs">
-                          {cuotas.filter((i) => i.isPaid).length} / {cuotas.length} pagadas
+                          {scheduleRows.filter((i) => i.isPaid).length} / {scheduleRows.length} pagadas
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums text-xs">
-                          {formatNumber(cuotas.reduce((s, i) => s + (i.totalAmount ?? 0), 0))}
+                          {formatNumber(scheduleRows.reduce((s, i) => s + (i.totalAmount ?? 0), 0))}
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums text-xs">
-                          {formatNumber(cuotas.reduce((s, i) => s + (i.principalAmount ?? 0), 0))}
+                          {formatNumber(scheduleRows.reduce((s, i) => s + (i.principalAmount ?? 0), 0))}
                         </td>
                         <td className="px-3 py-2 text-right tabular-nums text-xs">
-                          {formatNumber(cuotas.reduce((s, i) => s + (i.interestAmount ?? 0), 0))}
+                          {formatNumber(scheduleRows.reduce((s, i) => s + (i.interestAmount ?? 0), 0))}
                         </td>
                         <td colSpan={2} />
                       </tr>

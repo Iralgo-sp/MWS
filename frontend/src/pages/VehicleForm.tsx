@@ -11,6 +11,7 @@ import {
   VEHICLE_TYPES,
   inputClass,
 } from "../constants";
+import { useConfirm } from "../components/ConfirmDialog";
 
 function fmtPrice(n: number | null | undefined): string {
   return n != null ? formatNumber(n) : "";
@@ -51,9 +52,11 @@ const emptyForm = {
 export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const confirmDialog = useConfirm();
   const [form, setForm] = useState(emptyForm);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(mode === "edit");
+  const [originalStatus, setOriginalStatus] = useState<VehicleStatus | null>(null);
 
   useEffect(() => {
     if (mode === "edit" && id) {
@@ -85,6 +88,7 @@ export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
             nextItv: v.nextItv ? v.nextItv.slice(0, 10) : "",
             serviceIntervalKm: v.serviceIntervalKm?.toString() ?? "",
           });
+          setOriginalStatus(v.status);
           setLoading(false);
         })
         .catch((e: Error) => {
@@ -131,7 +135,17 @@ export default function VehicleForm({ mode }: { mode: "create" | "edit" }) {
         navigate(`/vehicles/${created.id}`);
       } else if (id) {
         await api.vehicles.update(id, payload);
-        navigate(`/vehicles/${id}`);
+        const justSold = originalStatus === "activo" && form.status === "vendido";
+        const wantsExport =
+          justSold &&
+          (await confirmDialog({
+            title: "Vehículo marcado como vendido",
+            message: "¿Quieres generar ahora el expediente en PDF para el comprador?",
+            confirmLabel: "Generar expediente",
+            cancelLabel: "Ahora no",
+            danger: false,
+          }));
+        navigate(wantsExport ? `/vehicles/${id}/export` : `/vehicles/${id}`);
       }
     } catch (e) {
       setError((e as Error).message);
