@@ -99,12 +99,14 @@ function SimplePaymentForm({
   onSave,
   onCancel,
   error,
+  initialValues,
 }: {
   onSave: (data: typeof emptySimple) => Promise<void>;
   onCancel: () => void;
   error: string | null;
+  initialValues?: Partial<typeof emptySimple>;
 }) {
-  const [form, setForm] = useState(emptySimple);
+  const [form, setForm] = useState({ ...emptySimple, ...initialValues });
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     await onSave(form);
@@ -178,6 +180,8 @@ export default function InstallmentsSection({
   );
   const [showAddForm, setShowAddForm] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
+  const [editingPayment, setEditingPayment] = useState<Installment | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
   const confirmDialog = useConfirm();
 
   // Amortization generator state
@@ -232,6 +236,23 @@ export default function InstallmentsSection({
       onChange();
     } catch (e) {
       setAddError((e as Error).message);
+    }
+  }
+
+  async function handleEditSave(form: typeof emptySimple) {
+    if (!editingPayment) return;
+    setEditError(null);
+    try {
+      await api.installments.update(editingPayment.id, {
+        paymentDate: form.paymentDate,
+        concept: form.concept,
+        totalAmount: form.totalAmount ? Number(form.totalAmount) : undefined,
+        notes: form.notes || undefined,
+      });
+      setEditingPayment(null);
+      onChange();
+    } catch (e) {
+      setEditError((e as Error).message);
     }
   }
 
@@ -379,10 +400,28 @@ export default function InstallmentsSection({
           {showAddForm && (
             <SimplePaymentForm onSave={handleAddSimple} onCancel={() => setShowAddForm(false)} error={addError} />
           )}
+          {editingPayment && (
+            <SimplePaymentForm
+              onSave={handleEditSave}
+              onCancel={() => { setEditingPayment(null); setEditError(null); }}
+              error={editError}
+              initialValues={{
+                paymentDate: editingPayment.paymentDate.slice(0, 10),
+                concept: editingPayment.concept as PaymentConcept,
+                totalAmount: editingPayment.totalAmount != null ? String(editingPayment.totalAmount) : "",
+                notes: editingPayment.notes ?? "",
+              }}
+            />
+          )}
           {installments.length === 0 && !showAddForm && (
             <p className="text-sm text-slate-400 py-4 text-center">Sin pagos registrados todavía.</p>
           )}
-          <PaymentList installments={installments} onTogglePaid={togglePaid} onDelete={handleDelete} />
+          <PaymentList
+            installments={installments}
+            onTogglePaid={togglePaid}
+            onDelete={handleDelete}
+            onEdit={(i) => { setEditingPayment(i); setEditError(null); setShowAddForm(false); }}
+          />
         </div>
       )}
 
@@ -403,10 +442,28 @@ export default function InstallmentsSection({
             {showAddForm && (
               <SimplePaymentForm onSave={handleAddSimple} onCancel={() => setShowAddForm(false)} error={addError} />
             )}
+            {editingPayment && (
+              <SimplePaymentForm
+                onSave={handleEditSave}
+                onCancel={() => { setEditingPayment(null); setEditError(null); }}
+                error={editError}
+                initialValues={{
+                  paymentDate: editingPayment.paymentDate.slice(0, 10),
+                  concept: editingPayment.concept as PaymentConcept,
+                  totalAmount: editingPayment.totalAmount != null ? String(editingPayment.totalAmount) : "",
+                  notes: editingPayment.notes ?? "",
+                }}
+              />
+            )}
             {extraPayments.length === 0 && !showAddForm && (
               <p className="text-xs text-slate-400 py-2">Sin pagos parciales (entrada, pago previo…)</p>
             )}
-            <PaymentList installments={extraPayments} onTogglePaid={togglePaid} onDelete={handleDelete} />
+            <PaymentList
+              installments={extraPayments}
+              onTogglePaid={togglePaid}
+              onDelete={handleDelete}
+              onEdit={(i) => { setEditingPayment(i); setEditError(null); setShowAddForm(false); }}
+            />
           </div>
 
           {/* Auto-generate prompt when financing data is complete but no cuotas yet */}
@@ -638,10 +695,12 @@ function PaymentList({
   installments,
   onTogglePaid,
   onDelete,
+  onEdit,
 }: {
   installments: Installment[];
   onTogglePaid: (i: Installment) => void;
   onDelete: (id: string) => void;
+  onEdit: (i: Installment) => void;
 }) {
   if (installments.length === 0) return null;
   return (
@@ -672,6 +731,15 @@ function PaymentList({
               {formatNumber(i.totalAmount)} €
             </span>
           )}
+          <button
+            onClick={() => onEdit(i)}
+            className="text-slate-300 hover:text-teal-600 transition-colors shrink-0"
+            title="Editar"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a4 4 0 01-2.828 1.172H7v-2a4 4 0 011.172-2.828z" />
+            </svg>
+          </button>
           <button onClick={() => onDelete(i.id)} className="text-slate-300 hover:text-red-500 transition-colors shrink-0 text-xs">✕</button>
         </li>
       ))}

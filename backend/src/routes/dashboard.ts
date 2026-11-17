@@ -81,7 +81,11 @@ export default async function dashboardRoutes(app: FastifyInstance) {
       }),
       prisma.installment.aggregate({
         _sum: { totalAmount: true },
-        where: { isPaid: true, paymentDate: { gte: monthStart, lte: monthEnd } },
+        where: {
+          isPaid: true,
+          paymentDate: { gte: monthStart, lte: monthEnd },
+          vehicle: { paymentMethod: "financiado" },
+        },
       }),
     ]);
 

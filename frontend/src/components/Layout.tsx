@@ -66,7 +66,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                       <img
                         src={`/api/vehicles/${v.id}/cover?t=${v.updatedAt}`}
                         alt=""
-                        className="w-20 h-10 rounded-md object-cover shrink-0"
+                        className="w-20 h-10 rounded-md object-contain shrink-0"
                       />
                     ) : (
                       <span className="text-xl leading-none shrink-0">{VEHICLE_TYPE_ICONS[v.type]}</span>

@@ -275,7 +275,7 @@ function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
           <img
             src={`${api.vehicles.coverUrl(v.id)}?t=${v.updatedAt}`}
             alt={v.alias}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">

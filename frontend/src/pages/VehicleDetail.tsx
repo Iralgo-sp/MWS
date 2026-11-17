@@ -132,7 +132,7 @@ export default function VehicleDetail() {
               <img
                 src={`${api.vehicles.coverUrl(vehicle.id)}?t=${vehicle.updatedAt}`}
                 alt={vehicle.alias}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
