@@ -2,6 +2,7 @@
   "name": "mws",
   "version": "1.0.0",
   "description": "Gestión de vehículos del hogar",
+  "author": "Iralgo",
   "main": "electron/dist/main.js",
   "private": true,
   "scripts": {
@@ -31,25 +32,19 @@
     },
     "files": [
       "electron/dist/**",
-      "backend/dist/**",
-      "backend/node_modules/**",
-      "backend/prisma/schema.prisma",
-      "backend/prisma/migrations/**",
-      "!backend/node_modules/.cache/**",
       "!**/.git/**"
     ],
     "extraResources": [
-      {
-        "from": "frontend/dist",
-        "to": "frontend-dist"
-      }
-    ],
-    "asarUnpack": [
-      "backend/node_modules/.prisma/**",
-      "backend/node_modules/@prisma/engines/**"
+      { "from": "frontend/dist", "to": "frontend-dist" },
+      { "from": "backend/dist/index.mjs", "to": "backend/dist/index.mjs" },
+      { "from": "backend/node_modules/@prisma/client", "to": "backend/node_modules/@prisma/client" },
+      { "from": "backend/node_modules/.prisma", "to": "backend/node_modules/.prisma" },
+      { "from": "backend/prisma/migrations", "to": "backend/prisma/migrations" },
+      { "from": "backend/prisma/schema.prisma", "to": "backend/prisma/schema.prisma" }
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,

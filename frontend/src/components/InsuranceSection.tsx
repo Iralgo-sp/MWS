@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api/client";
-import type { InsurancePolicy } from "../api/types";
+import type { InsurancePolicy, InsuranceType } from "../api/types";
 import { INSURANCE_TYPE_LABELS, INSURANCE_TYPES, formatNumber } from "../constants";
 
 const TYPE_COLORS: Record<string, { select: string }> = {
@@ -253,7 +253,7 @@ function NewInsuranceRow({
         {err && <p className="text-xs text-red-500 mt-0.5">{err}</p>}
       </td>
       <td className="px-2 py-1.5">
-        <select value={fields.type} onChange={(e) => setFields((f) => ({ ...f, type: e.target.value }))} className={cell}>
+        <select value={fields.type} onChange={(e) => setFields((f) => ({ ...f, type: e.target.value as InsuranceType }))} className={cell}>
           {INSURANCE_TYPES.map((t) => <option key={t} value={t}>{INSURANCE_TYPE_LABELS[t]}</option>)}
         </select>
       </td>

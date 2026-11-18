@@ -5,7 +5,7 @@ import { api } from "../api/client";
 import type { Vehicle } from "../api/types";
 import { VEHICLE_TYPE_ICONS, VEHICLE_TYPE_LABELS, VEHICLE_TYPES } from "../constants";
 
-const isElectron = typeof window !== "undefined" && !!(window as Record<string, unknown>).electronAPI;
+const isElectron = typeof window !== "undefined" && !!(window as unknown as Record<string, unknown>).electronAPI;
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);

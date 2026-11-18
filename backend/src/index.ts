@@ -1,7 +1,10 @@
 import { mkdir } from "node:fs/promises";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import Fastify from "fastify";
+import { PrismaClient } from "@prisma/client";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import vehicleRoutes from "./routes/vehicles.js";
@@ -17,12 +20,60 @@ import reportRoutes from "./routes/reports.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+async function runMigrations(): Promise<void> {
+  const migrationsDir = path.join(__dirname, "../prisma/migrations");
+  if (!existsSync(migrationsDir)) return;
+
+  const prisma = new PrismaClient();
+  try {
+    await prisma.$connect();
+
+    await prisma.$executeRawUnsafe(`
+      CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
+        "id"                  TEXT NOT NULL PRIMARY KEY,
+        "checksum"            TEXT NOT NULL,
+        "finished_at"         DATETIME,
+        "migration_name"      TEXT NOT NULL,
+        "logs"                TEXT,
+        "rolled_back_at"      DATETIME,
+        "started_at"          DATETIME NOT NULL DEFAULT current_timestamp,
+        "applied_steps_count" INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+
+    const applied = await prisma.$queryRaw<{ migration_name: string }[]>`
+      SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL
+    `;
+    const appliedSet = new Set(applied.map((r) => r.migration_name));
+
+    for (const dir of readdirSync(migrationsDir).sort()) {
+      if (appliedSet.has(dir)) continue;
+      const sqlFile = path.join(migrationsDir, dir, "migration.sql");
+      if (!existsSync(sqlFile)) continue;
+
+      const sql = readFileSync(sqlFile, "utf-8");
+      for (const stmt of sql.split(";").map((s) => s.trim()).filter(Boolean)) {
+        await prisma.$executeRawUnsafe(stmt);
+      }
+
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO "_prisma_migrations" (id, checksum, migration_name, finished_at, applied_steps_count)
+         VALUES ('${randomUUID()}', '', '${dir}', datetime('now'), 1)`
+      );
+    }
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
 export interface ServerOptions {
   /** Absolute path to built frontend files; enables static serving + SPA fallback. */
   staticDir?: string;
 }
 
 export async function startServer(options: ServerOptions = {}) {
+  await runMigrations();
+
   const app = Fastify({ logger: true });
 
   await app.register(cors, { origin: true });
