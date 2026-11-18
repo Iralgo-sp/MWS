@@ -147,6 +147,43 @@ export interface DashboardSummary {
   };
 }
 
+export interface FleetReportVehicle {
+  id: string;
+  alias: string;
+  type: VehicleType;
+  brand?: string | null;
+  model?: string | null;
+  year?: number | null;
+  status: VehicleStatus;
+  purchaseDate?: string | null;
+  purchasePrice: number;
+  ageYears: number | null;
+  currentKm: number | null;
+  totalMaintenance: number;
+  totalInsurance: number;
+  totalInterest: number;
+  tcoTotal: number;
+  eurPerMonth: number | null;
+  eurPerKm: number | null;
+}
+
+export interface FleetReport {
+  generatedAt: string;
+  summary: {
+    totalVehicles: number;
+    activeVehicles: number;
+    soldVehicles: number;
+    averageAgeYears: number | null;
+    totalPurchaseValue: number;
+    totalMaintenanceCost: number;
+    totalInsuranceCost: number;
+    totalInterestCost: number;
+    totalTco: number;
+  };
+  byType: { type: VehicleType; count: number; tcoTotal: number }[];
+  vehicles: FleetReportVehicle[];
+}
+
 export interface VehicleDocument {
   id: string;
   vehicleId: string;

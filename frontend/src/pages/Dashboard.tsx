@@ -6,7 +6,6 @@ import {
   formatNumber,
   VEHICLE_TYPE_ICONS,
   VEHICLE_TYPE_LABELS,
-  PAYMENT_METHOD_LABELS,
 } from "../constants";
 
 export default function Dashboard() {
@@ -32,12 +31,20 @@ export default function Dashboard() {
           <h1 className="text-2xl font-semibold text-slate-900">Panel</h1>
           <p className="text-slate-500 text-sm mt-0.5">Resumen de tus vehículos</p>
         </div>
-        <Link
-          to="/vehicles/new"
-          className="px-4 py-2 rounded-md bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium transition-colors"
-        >
-          + Añadir vehículo
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            to="/reports/fleet"
+            className="px-4 py-2 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm font-medium transition-colors"
+          >
+            Informe de flota
+          </Link>
+          <Link
+            to="/vehicles/new"
+            className="px-4 py-2 rounded-md bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium transition-colors"
+          >
+            + Añadir vehículo
+          </Link>
+        </div>
       </div>
 
       {/* Stats strip */}
@@ -267,15 +274,23 @@ function ExpenseCell({ label, value, icon }: { label: string; value: number; ico
 }
 
 function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
+  const inactive = v.status !== "activo";
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:border-teal-300 hover:shadow-md transition-all overflow-hidden">
+    <Link
+      to={`/vehicles/${v.id}`}
+      className={`block rounded-lg border shadow-sm transition-all overflow-hidden ${
+        inactive
+          ? "bg-slate-50 border-slate-200 border-dashed hover:border-slate-300 hover:shadow-md"
+          : "bg-white border-slate-200 hover:border-teal-300 hover:shadow-md"
+      }`}
+    >
       {/* Photo */}
-      <div className="relative h-44 bg-slate-100 overflow-hidden">
+      <div className={`relative h-44 overflow-hidden ${inactive ? "bg-slate-200" : "bg-slate-100"}`}>
         {v.coverImage ? (
           <img
             src={`${api.vehicles.coverUrl(v.id)}?t=${v.updatedAt}`}
             alt={v.alias}
-            className="w-full h-full object-contain"
+            className={`w-full h-full object-contain ${inactive ? "opacity-60 grayscale-[0.4]" : ""}`}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
@@ -283,59 +298,29 @@ function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
           </div>
         )}
         <span className={`absolute top-2 right-2 text-xs px-2 py-0.5 rounded-full font-medium backdrop-blur-sm ${
-          v.status === "activo" ? "bg-teal-500/90 text-white" : "bg-slate-600/80 text-white"
+          inactive ? "bg-slate-600/80 text-white" : "bg-teal-500/90 text-white"
         }`}>
-          {v.status === "activo" ? "Activo" : "Vendido"}
+          {inactive ? "Vendido" : "Activo"}
         </span>
       </div>
 
       {/* Info */}
       <div className="p-4">
-        <div className="mb-3">
-          <h3 className="font-semibold text-slate-900 text-base">{v.alias}</h3>
-          <p className="text-sm text-slate-500 truncate">
-            {VEHICLE_TYPE_LABELS[v.type]}
-            {v.brand ? ` · ${v.brand}` : ""}
-            {v.model ? ` ${v.model}` : ""}
-            {v.year ? ` · ${v.year}` : ""}
-          </p>
-        </div>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-sm">
-          {v.plate && <InfoRow label="Matrícula" value={v.plate} />}
-          {v.chassis && <InfoRow label="Bastidor" value={v.chassis} />}
-          {v.color && <InfoRow label="Color" value={v.color} />}
-          {v.purchaseDate && (
-            <InfoRow label="Compra" value={new Date(v.purchaseDate).toLocaleDateString("es-ES", {
+        <h3 className={`font-semibold text-base ${inactive ? "text-slate-500" : "text-slate-900"}`}>{v.alias}</h3>
+        <p className={`text-sm truncate ${inactive ? "text-slate-400" : "text-slate-500"}`}>
+          {VEHICLE_TYPE_LABELS[v.type]}
+          {v.brand ? ` · ${v.brand}` : ""}
+          {v.model ? ` ${v.model}` : ""}
+          {v.year ? ` · ${v.year}` : ""}
+        </p>
+        {v.purchaseDate && (
+          <p className="text-xs text-slate-400 mt-1.5">
+            Compra: {new Date(v.purchaseDate).toLocaleDateString("es-ES", {
               day: "numeric", month: "short", year: "numeric",
-            })} />
-          )}
-          {v.purchasePrice != null && (
-            <InfoRow label="Precio" value={`${formatNumber(v.purchasePrice)} €`} />
-          )}
-          <InfoRow label="Pago" value={PAYMENT_METHOD_LABELS[v.paymentMethod]} />
-        </dl>
+            })}
+          </p>
+        )}
       </div>
-
-      {/* Actions */}
-      <div className="px-4 py-3 bg-slate-50 border-t border-slate-100 flex items-center gap-2">
-        <Link to={`/vehicles/${v.id}`}
-          className="flex-1 text-center py-1.5 rounded-md bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium transition-colors">
-          Ver detalle
-        </Link>
-        <Link to={`/vehicles/${v.id}/edit`}
-          className="px-3 py-1.5 rounded-md border border-slate-300 hover:bg-slate-100 text-slate-700 text-sm transition-colors">
-          Editar
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function InfoRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-slate-400 text-xs">{label}</dt>
-      <dd className="text-slate-700 font-medium truncate">{value}</dd>
-    </div>
+    </Link>
   );
 }

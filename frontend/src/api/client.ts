@@ -1,6 +1,7 @@
 import type {
   AcquisitionOffer,
   DashboardSummary,
+  FleetReport,
   Installment,
   InsurancePolicy,
   MaintenanceRecord,
@@ -40,6 +41,9 @@ async function upload<T>(path: string, formData: FormData): Promise<T> {
 export const api = {
   dashboard: {
     summary: () => request<DashboardSummary>("/dashboard/summary"),
+  },
+  reports: {
+    fleet: () => request<FleetReport>("/reports/fleet"),
   },
   vehicles: {
     list: () => request<Vehicle[]>("/vehicles"),

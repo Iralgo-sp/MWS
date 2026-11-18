@@ -5,6 +5,7 @@ import Dashboard from "./pages/Dashboard";
 import VehicleForm from "./pages/VehicleForm";
 import VehicleDetail from "./pages/VehicleDetail";
 import VehicleExport from "./pages/VehicleExport";
+import FleetReportPage from "./pages/FleetReport";
 import Settings from "./pages/Settings";
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
             <Route path="/vehicles/:id" element={<VehicleDetail />} />
             <Route path="/vehicles/:id/export" element={<VehicleExport />} />
             <Route path="/vehicles/:id/edit" element={<VehicleForm mode="edit" />} />
+            <Route path="/reports/fleet" element={<FleetReportPage />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
         </Layout>

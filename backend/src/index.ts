@@ -12,6 +12,7 @@ import installmentRoutes from "./routes/installments.js";
 import documentRoutes from "./routes/documents.js";
 import odometerRoutes from "./routes/odometer.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import reportRoutes from "./routes/reports.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -37,6 +38,7 @@ export async function startServer(options: ServerOptions = {}) {
   await app.register(documentRoutes);
   await app.register(odometerRoutes);
   await app.register(dashboardRoutes);
+  await app.register(reportRoutes);
 
   app.get("/api/health", async () => ({ ok: true }));
 
