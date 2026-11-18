@@ -1,7 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain, shell } from "electron";
 import path from "node:path";
-import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { execSync } from "node:child_process";
 
 
 // Keep userData consistent between dev and prod (productName changes the default path)
@@ -40,9 +41,30 @@ async function startBackend(): Promise<void> {
     }
   }
 
-  // ── Data directory (default: userData, overridable via settings) ─────────
   const dataDir = getDataDir();
-  const dbPath = path.join(dataDir, "mws.db");
+
+  // Prisma/SQLite can't open paths with non-ASCII characters on Windows.
+  // If dataDir has accents or special chars, create a directory junction at a safe
+  // ASCII path so SQLite can reach the file without encoding issues.
+  let dbPath = path.join(dataDir, "mws.db");
+  if (/[^\x00-\x7F]/.test(dataDir)) {
+    const jctPath = path.join(app.getPath("userData"), "jct");
+    try {
+      if (existsSync(jctPath)) {
+        execSync(`cmd /c rmdir "${jctPath}"`, { windowsHide: true, timeout: 3000 });
+      }
+      execSync(`cmd /c mklink /J "${jctPath}" "${dataDir}"`, { windowsHide: true, timeout: 3000 });
+      dbPath = path.join(jctPath, "mws.db");
+    } catch {
+      // Junction failed; fall back to userData
+      const fallback = path.join(app.getPath("userData"), "mws.db");
+      if (existsSync(path.join(dataDir, "mws.db")) && !existsSync(fallback)) {
+        copyFileSync(path.join(dataDir, "mws.db"), fallback);
+      }
+      dbPath = fallback;
+    }
+  }
+
   process.env.DATABASE_URL = `file:${dbPath.replace(/\\/g, "/")}`;
   process.env.UPLOADS_DIR = path.join(dataDir, "uploads");
   process.env.PORT = String(PORT);
@@ -96,7 +118,27 @@ ipcMain.handle("app:changeDataDir", async () => {
     properties: ["openDirectory", "createDirectory"],
   });
   if (result.canceled || !result.filePaths[0]) return { canceled: true };
-  writeSettings({ dataDir: result.filePaths[0] });
+
+  const newDir = result.filePaths[0];
+  const newDbPath = path.join(newDir, "mws.db");
+
+  // Copy the existing database to the new location (if not already there)
+  if (!existsSync(newDbPath)) {
+    const currentDataDir = getDataDir();
+    // Look for the current DB: via junction if accented, else directly in dataDir or userData
+    const candidates = [
+      path.join(app.getPath("userData"), "jct", "mws.db"),
+      path.join(currentDataDir, "mws.db"),
+      path.join(app.getPath("userData"), "mws.db"),
+    ];
+    const src = candidates.find(existsSync);
+    if (src) {
+      mkdirSync(newDir, { recursive: true });
+      copyFileSync(src, newDbPath);
+    }
+  }
+
+  writeSettings({ dataDir: newDir });
   app.relaunch();
   app.exit(0);
   return { canceled: false };
