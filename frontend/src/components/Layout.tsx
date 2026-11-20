@@ -4,9 +4,10 @@ import type { ReactNode } from "react";
 import { api } from "../api/client";
 import type { Vehicle } from "../api/types";
 import { VEHICLE_TYPE_ICONS, VEHICLE_TYPE_LABELS, VEHICLE_TYPES } from "../constants";
+import { HcStatusBar } from "./HcStatusBar";
 
 const isElectron = typeof window !== "undefined" && !!(window as unknown as Record<string, unknown>).electronAPI;
-const isHomeCore = typeof window !== "undefined" && !!(window as unknown as Record<string, unknown>).mwsHomecore;
+const isHomeCore = !!import.meta.env.VITE_HOMECORE;
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -21,25 +22,11 @@ export default function Layout({ children }: { children: ReactNode }) {
     .filter((g) => g.items.length > 0);
 
   return (
-    <div className="flex h-full" style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}>
+    <div className="flex h-full" style={{ backgroundColor: "var(--bg)", color: "var(--text)", paddingBottom: isHomeCore ? "36px" : "0" }}>
       <aside
         className="no-print w-60 shrink-0 flex flex-col overflow-y-auto"
         style={{ backgroundColor: "var(--mws-nav-bg)", borderRight: "1px solid var(--mws-nav-border)" }}
       >
-        {isHomeCore && (
-          <div className="px-3 pt-3 pb-0">
-            <button
-              onClick={() => (window as unknown as { mwsHomecore: { goHome: () => void } }).mwsHomecore.goHome()}
-              className="mws-nav-link text-xs"
-              style={{ padding: "0.375rem 0.75rem" }}
-            >
-              <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              HomeCore
-            </button>
-          </div>
-        )}
 
         <div className="px-4 py-5 border-b" style={{ borderColor: "var(--mws-nav-border)" }}>
           <Link
@@ -157,6 +144,7 @@ export default function Layout({ children }: { children: ReactNode }) {
       <main className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg)" }}>
         {children}
       </main>
+      {isHomeCore && <HcStatusBar />}
     </div>
   );
 }
