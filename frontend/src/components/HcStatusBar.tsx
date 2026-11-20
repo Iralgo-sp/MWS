@@ -80,7 +80,7 @@ export function HcStatusBar() {
         HomeCore
       </button>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#5c6b55', fontSize: '11px', flex: 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', color: '#8f9b87', fontSize: '11px', flex: 1 }}>
         <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: MW_COLOR, flexShrink: 0 }} />
         Gestión de Vehículos
       </div>
