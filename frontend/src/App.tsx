@@ -1,5 +1,6 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, HashRouter, Route, Routes } from "react-router-dom";
 import { ConfirmProvider } from "./components/ConfirmDialog";
+import { ThemeProvider } from "./context/ThemeContext";
 import Layout from "./components/Layout";
 import Dashboard from "./pages/Dashboard";
 import VehicleForm from "./pages/VehicleForm";
@@ -8,9 +9,12 @@ import VehicleExport from "./pages/VehicleExport";
 import FleetReportPage from "./pages/FleetReport";
 import Settings from "./pages/Settings";
 
+const Router = import.meta.env.VITE_HOMECORE ? HashRouter : BrowserRouter;
+
 export default function App() {
   return (
-    <BrowserRouter>
+    <ThemeProvider>
+    <Router>
       <ConfirmProvider>
         <Layout>
           <Routes>
@@ -24,6 +28,7 @@ export default function App() {
           </Routes>
         </Layout>
       </ConfirmProvider>
-    </BrowserRouter>
+    </Router>
+    </ThemeProvider>
   );
 }

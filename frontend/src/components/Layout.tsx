@@ -6,6 +6,7 @@ import type { Vehicle } from "../api/types";
 import { VEHICLE_TYPE_ICONS, VEHICLE_TYPE_LABELS, VEHICLE_TYPES } from "../constants";
 
 const isElectron = typeof window !== "undefined" && !!(window as unknown as Record<string, unknown>).electronAPI;
+const isHomeCore = typeof window !== "undefined" && !!(window as unknown as Record<string, unknown>).mwsHomecore;
 
 export default function Layout({ children }: { children: ReactNode }) {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -20,26 +21,44 @@ export default function Layout({ children }: { children: ReactNode }) {
     .filter((g) => g.items.length > 0);
 
   return (
-    <div className="flex h-full">
-      <aside className="no-print w-60 shrink-0 bg-slate-900 flex flex-col overflow-y-auto">
-        <div className="px-4 py-5 border-b border-slate-800">
-          <Link to="/" className="text-teal-400 font-bold text-xl tracking-wide hover:text-teal-300 transition-colors">
+    <div className="flex h-full" style={{ backgroundColor: "var(--bg)", color: "var(--text)" }}>
+      <aside
+        className="no-print w-60 shrink-0 flex flex-col overflow-y-auto"
+        style={{ backgroundColor: "var(--mws-nav-bg)", borderRight: "1px solid var(--mws-nav-border)" }}
+      >
+        {isHomeCore && (
+          <div className="px-3 pt-3 pb-0">
+            <button
+              onClick={() => (window as unknown as { mwsHomecore: { goHome: () => void } }).mwsHomecore.goHome()}
+              className="mws-nav-link text-xs"
+              style={{ padding: "0.375rem 0.75rem" }}
+            >
+              <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              HomeCore
+            </button>
+          </div>
+        )}
+
+        <div className="px-4 py-5 border-b" style={{ borderColor: "var(--mws-nav-border)" }}>
+          <Link
+            to="/"
+            className="font-bold text-xl tracking-wide hover:opacity-80 transition-opacity"
+            style={{ color: "var(--primary)", fontFamily: "var(--font-serif)" }}
+          >
             MWS
           </Link>
-          <p className="text-slate-500 text-xs mt-0.5">Gestión de vehículos</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--mws-nav-text-muted)" }}>
+            Gestión de vehículos
+          </p>
         </div>
 
         <nav className="px-2 py-3">
           <NavLink
             to="/"
             end
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive
-                  ? "bg-teal-600 text-white font-medium"
-                  : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
-              }`
-            }
+            className={({ isActive }) => `mws-nav-link${isActive ? " active" : ""}`}
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -48,13 +67,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           </NavLink>
           <NavLink
             to="/reports/fleet"
-            className={({ isActive }) =>
-              `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                isActive
-                  ? "bg-teal-600 text-white font-medium"
-                  : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
-              }`
-            }
+            className={({ isActive }) => `mws-nav-link${isActive ? " active" : ""}`}
           >
             <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V9m4 8V5m4 12v-6M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z" />
@@ -65,13 +78,13 @@ export default function Layout({ children }: { children: ReactNode }) {
 
         {vehicles.length > 0 && (
           <div className="px-2 flex-1">
-            <p className="px-3 py-1 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+            <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider" style={{ color: "var(--mws-nav-text-muted)" }}>
               Vehículos
             </p>
             {groupedVehicles.map((group) => (
               <div key={group.type} className="mt-1">
                 {groupedVehicles.length > 1 && (
-                  <p className="px-3 py-1 text-[11px] font-medium text-slate-600 flex items-center gap-1.5">
+                  <p className="px-3 py-1 text-[11px] font-medium flex items-center gap-1.5" style={{ color: "var(--mws-nav-text-muted)" }}>
                     <span>{VEHICLE_TYPE_ICONS[group.type]}</span>
                     {VEHICLE_TYPE_LABELS[group.type]}
                   </p>
@@ -81,17 +94,11 @@ export default function Layout({ children }: { children: ReactNode }) {
                     <li key={v.id}>
                       <NavLink
                         to={`/vehicles/${v.id}`}
-                        className={({ isActive }) =>
-                          `flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors ${
-                            isActive
-                              ? "bg-slate-700 text-white"
-                              : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
-                          }`
-                        }
+                        className={({ isActive }) => `mws-nav-link mws-vehicle-link${isActive ? " active" : ""}`}
                       >
                         {v.coverImage ? (
                           <img
-                            src={`/api/vehicles/${v.id}/cover?t=${v.updatedAt}`}
+                            src={isHomeCore ? api.vehicles.coverUrl(v.id) : `/api/vehicles/${v.id}/cover?t=${v.updatedAt}`}
                             alt=""
                             className="w-20 h-10 rounded-md object-contain shrink-0"
                           />
@@ -100,7 +107,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                         )}
                         <span className="truncate">{v.alias}</span>
                         {v.status === "vendido" && (
-                          <span className="ml-auto text-xs bg-slate-800 text-slate-500 px-1.5 py-0.5 rounded shrink-0">
+                          <span className="ml-auto text-xs px-1.5 py-0.5 rounded shrink-0" style={{ backgroundColor: "color-mix(in srgb, var(--mws-nav-bg) 80%, black)", color: "var(--mws-nav-text-muted)" }}>
                             Vend.
                           </span>
                         )}
@@ -113,11 +120,8 @@ export default function Layout({ children }: { children: ReactNode }) {
           </div>
         )}
 
-        <div className="p-3 border-t border-slate-800 mt-auto space-y-2">
-          <Link
-            to="/vehicles/new"
-            className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-md bg-teal-600 hover:bg-teal-500 text-white text-sm font-medium transition-colors"
-          >
+        <div className="p-3 mt-auto space-y-2" style={{ borderTop: "1px solid var(--mws-nav-border)" }}>
+          <Link to="/vehicles/new" className="mws-btn-primary">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
@@ -127,13 +131,7 @@ export default function Layout({ children }: { children: ReactNode }) {
             <>
               <NavLink
                 to="/settings"
-                className={({ isActive }) =>
-                  `flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm transition-colors ${
-                    isActive
-                      ? "bg-slate-700 text-white"
-                      : "text-slate-400 hover:text-slate-100 hover:bg-slate-800"
-                  }`
-                }
+                className={({ isActive }) => `mws-nav-link${isActive ? " active" : ""}`}
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -143,7 +141,8 @@ export default function Layout({ children }: { children: ReactNode }) {
               </NavLink>
               <button
                 onClick={() => window.electronAPI?.quit()}
-                className="flex items-center gap-2 w-full px-3 py-2 rounded-md border border-slate-700 hover:bg-slate-800 text-slate-400 hover:text-slate-200 text-sm transition-colors"
+                className="mws-nav-link"
+                style={{ border: "1px solid var(--mws-nav-border)" }}
               >
                 <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -155,7 +154,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-y-auto bg-slate-50">
+      <main className="flex-1 overflow-y-auto" style={{ backgroundColor: "var(--bg)" }}>
         {children}
       </main>
     </div>
